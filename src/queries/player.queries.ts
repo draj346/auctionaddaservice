@@ -1,5 +1,5 @@
 export const PlayerQueries = {
-  findPlayerByMobile: `SELECT playerId FROM players WHERE mobile = ?`,
+  findPlayerByMobile: `SELECT playerId, isSubmitted FROM players WHERE mobile = ?`,
   insertPlayer: `INSERT INTO players (name, mobile, email) VALUES (?, ?, ?)`,
   updatePlayer: `
     UPDATE players SET 
@@ -10,12 +10,12 @@ export const PlayerQueries = {
       isPaidPlayer = ?,
       pricePerMatch = ?,
       willJoinAnyOwner = ?,
+      image = ?,
       isSubmitted = ?,
       isNonPlayer = ?,
       isOwner = ?,
       isAdmin = ?
     WHERE playerId = ?`,
-  updateImage: `UPDATE players SET image = ? WHERE playerId = ?`,
   getPlayers: `SELECT playerId, name, email FROM players`,
   findPlayerByIdentifier: `SELECT playerId, password FROM players WHERE email = ? OR mobile = ?`,
   updatePassword: `UPDATE players SET password = ? WHERE playerId = ?`

@@ -3,59 +3,57 @@ import { PlayerQueries } from "../queries/player.queries";
 import {
   Player,
   InitialRegistrationData,
-  CompleteRegistrationData,
-  RegistrationProfileImage,
+  UpdateProfileSchemaData,
+  PlayerExistsSchema,
 } from "../types/player.types";
 import { encryptPassword } from "../utils/encryption";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
-import fs from "fs/promises";
 
 export class PlayerService {
-  async initialRegistration(data: InitialRegistrationData): Promise<number> {
+  async initialRegistration(
+    data: InitialRegistrationData
+  ): Promise<PlayerExistsSchema> {
     const [existing] = await pool.execute<RowDataPacket[]>(
       PlayerQueries.findPlayerByMobile,
       [data.mobile]
     );
 
     if (existing.length > 0) {
-      console.log("User Registered Already!!");
-      return existing[0].playerId;
+      return {
+        playerId: existing[0].playerId,
+        isRegistered: existing[0].isSubmitted === 1 ? true: false,
+      };
     }
 
     const [result] = await pool.execute<ResultSetHeader>(
       PlayerQueries.insertPlayer,
-      [data.name, data.mobile, data.email]
+      [data.name, data.mobile, data.email || null]
     );
 
-    return result.insertId;
+    return {
+      playerId: result.insertId,
+      isRegistered: false,
+    };
   }
 
-  async completeRegistration(data: CompleteRegistrationData): Promise<boolean> {
+  async updateProfile(data: UpdateProfileSchemaData): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
       PlayerQueries.updatePlayer,
       [
-        data.jerseyNumber,
-        data.tShirtSize,
-        data.lowerSize,
-        data.hasCricheroesProfile,
-        data.isPaidPlayer,
-        data.pricePerMatch,
-        data.willJoinAnyOwner,
-        data.isSubmitted,
-        data.isNonPlayer,
-        data.isOwner,
-        data.isAdmin,
-        data.playerId,
+        data.jerseyNumber || null,
+        data.tShirtSize || null,
+        data.lowerSize || null,
+        data.hasCricheroesProfile === undefined ? null : data.hasCricheroesProfile,
+        data.isPaidPlayer === undefined ? null : data.isPaidPlayer,
+        data.pricePerMatch || null,
+        data.willJoinAnyOwner === undefined ? null : data.willJoinAnyOwner,
+        data.image || null,
+        data.isSubmitted === undefined ? null : data.isSubmitted,
+        data.isNonPlayer === undefined ? null : data.isNonPlayer,
+        data.isOwner === undefined ? null : data.isOwner,
+        data.isAdmin === undefined ? null : data.isAdmin,
+        data.playerId || null,
       ]
-    );
-
-    return result.affectedRows > 0;
-  }
-
-  async uploadPlayerImage(data: RegistrationProfileImage): Promise<boolean> {
-    const [result] = await pool.execute<ResultSetHeader>(
-      PlayerQueries.updateImage,
-      [data.image, data.playerId]
     );
 
     return result.affectedRows > 0;
@@ -88,15 +86,5 @@ export class PlayerService {
     );
 
     return result.affectedRows > 0;
-  }
-
-async deleteUploadedFile(filePath: string): Promise<void> {
-    try {
-      await fs.access(filePath);
-      await fs.unlink(filePath);
-      console.log(`Deleted orphaned file: ${filePath}`);
-    } catch (error) {
-      console.error("Error deleting file:", error);
-    }
   }
 }

@@ -8,7 +8,8 @@ import { AuthService } from '../services/auth.service';
 declare global {
   namespace Express {
     interface Request {
-      player?: { playerId: number };
+      userId?: number;
+      isAuthenticated?: boolean;
     }
   }
 }
@@ -32,7 +33,8 @@ export const authMiddleware = async (
     if (!isValidUser) {
        return ApiResponse.error(res, 'Unauthorized: Invalid token', 401);
     }
-    req.player = { playerId: decoded.playerId }; // Type-safe assignment
+    req.userId = decoded.playerId;
+    req.isAuthenticated = true;
     next();
   } catch (err) {
     return ApiResponse.error(res, 'Unauthorized: Invalid token', 401);

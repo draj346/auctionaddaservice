@@ -24,8 +24,6 @@ export class AuthService {
       AuthQueries.findPlayerById,
       [playerId]
     );
-    console.log(result?.length > 0);
-
     return result?.length > 0 ? result[0].count === 1 : false;
   }
 

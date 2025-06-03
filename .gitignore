@@ -7,8 +7,6 @@ package-lock.json
 # Coveralls
 .nyc_output
 coverage
-public/uploads
 *.zip
 .DS_Store
-.env
 public/images

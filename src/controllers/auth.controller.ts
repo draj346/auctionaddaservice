@@ -34,7 +34,7 @@ export class AuthController {
 
       const isValidUser = await AuthService.isValidUser(null, identifier);
       if (!isValidUser) {
-        return ApiResponse.error(res, "User is not valid", 404);
+        return ApiResponse.error(res, "User is not valid", 401);
       }
 
       const sessionId = `session_${Date.now()}_${identifier}`;
@@ -68,7 +68,7 @@ export class AuthController {
       if (!!identifier) {
         const isValidUser = await AuthService.isValidUser(null, identifier);
         if (!isValidUser) {
-          return ApiResponse.error(res, "User is not valid", 404);
+          return ApiResponse.error(res, "User is not valid", 401);
         } else {
           ApiResponse.success(res, null, 200, "OTP verified successfully");
         }
@@ -97,13 +97,13 @@ export class AuthController {
 
       const isValidUser = await AuthService.isValidUser(null, identifier);
       if (!isValidUser) {
-        return ApiResponse.error(res, "User is not valid", 404);
+        return ApiResponse.error(res, "User is not valid", 401);
       }
 
       // Find player by identifier (email or phone)
       const player = await playerService.findPlayerByIdentifier(identifier);
       if (!player) {
-        return ApiResponse.error(res, "Player not found", 404);
+        return ApiResponse.error(res, "Player not found", 401);
       }
 
       const success = await playerService.updatePassword(

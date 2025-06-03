@@ -16,7 +16,6 @@ export class OTPService {
 
     storeOTP(sessionKey: string, identifier: string): string {
         const code = this.generateOTP();
-        console.log("code ", code);
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + OTP_EXPIRY_MINUTES);
 

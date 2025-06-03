@@ -9,6 +9,7 @@ export const DB_PASSWORD = process.env.DB_PASSWORD!;
 export const DB_NAME = process.env.DB_NAME!;
 export const DB_PORT = process.env.DB_PORT ? parseInt(process.env.DB_PORT) : 3306;
 export const JWT_SECRET = process.env.JWT_SECRET!;
+export const FILE_UPLOAD_LOCATION = process.env.FILE_UPLOAD_LOCATION!;
 export const OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES 
   ? parseInt(process.env.OTP_EXPIRY_MINUTES) 
   : 5;

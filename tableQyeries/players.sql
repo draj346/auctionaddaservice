@@ -1,0 +1,21 @@
+CREATE TABLE players (
+  playerId INT AUTO_INCREMENT PRIMARY KEY,
+  name VARCHAR(255) NOT NULL,
+  mobile VARCHAR(20) NOT NULL UNIQUE,
+  email VARCHAR(255),
+  jerseyNumber INT,
+  tShirtSize VARCHAR(10),
+  lowerSize VARCHAR(10),
+  hasCricheroesProfile BOOLEAN,
+  isPaidPlayer BOOLEAN,
+  pricePerMatch DECIMAL(10,2),
+  willJoinAnyOwner BOOLEAN,
+  image INT,
+  isSubmitted BOOLEAN DEFAULT false,
+  modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  isNonPlayer BOOLEAN DEFAULT false,
+  isOwner BOOLEAN DEFAULT false,
+  isAdmin BOOLEAN DEFAULT false,
+  password VARCHAR(255)
+) AUTO_INCREMENT=10001;

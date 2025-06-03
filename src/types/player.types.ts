@@ -26,7 +26,7 @@ export interface InitialRegistrationData {
   email?: string;
 }
 
-export interface CompleteRegistrationData {
+export interface UpdateProfileSchemaData {
   playerId: number;
   jerseyNumber: number;
   tShirtSize: string;
@@ -34,6 +34,7 @@ export interface CompleteRegistrationData {
   hasCricheroesProfile: boolean;
   isPaidPlayer: boolean;
   pricePerMatch: number;
+  image: number;
   willJoinAnyOwner: boolean;
   isSubmitted: boolean;
   isNonPlayer: boolean;
@@ -41,7 +42,7 @@ export interface CompleteRegistrationData {
   isAdmin: boolean;
 }
 
-export interface RegistrationProfileImage {
-  image: string;
+export interface PlayerExistsSchema {
   playerId: number;
+  isRegistered: boolean;
 }
