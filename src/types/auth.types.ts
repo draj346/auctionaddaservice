@@ -1,18 +1,16 @@
 export interface OTPSendRequest {
   identifier: string;
-  method: 'email' | 'sms';
+  method: 'email' | 'otp';
 }
 
 export interface OTPVerifyRequest {
-  uniqueIdentifier: string;
+  sessionId: string;
   code: string;
 }
 
 export interface ResetPasswordRequest {
-  identifier: string;
-  method: 'email' | 'sms';
-  uniqueIdentifier: string;
-  newPassword: string;
+  sessionId: string;
+  password: string;
 }
 
 export interface LoginRequest {
@@ -21,4 +19,9 @@ export interface LoginRequest {
   password?: string;
   otp?: string;
   uniqueIdentifier: string;
+}
+
+export interface PasswordSchema {
+  playerId: number;
+  password: string;
 }

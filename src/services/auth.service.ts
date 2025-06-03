@@ -1,6 +1,8 @@
 import pool from "../config/db.config";
 import { AuthQueries } from "../queries/auth.queries";
-import { RowDataPacket } from "mysql2";
+import { ResultSetHeader, RowDataPacket } from "mysql2";
+import { PasswordSchema } from "../types/auth.types";
+import { encryptPassword } from "../utils/encryption";
 
 export class AuthService {
   static isValidUser = async (
@@ -11,7 +13,8 @@ export class AuthService {
       if (playerId) {
         return await this.verifyPlayerById(playerId);
       } else if (emailOrPhone) {
-        return await this.verifyPlayerByIdentifier(emailOrPhone);
+        const result = await this.verifyPlayerByIdentifier(emailOrPhone);
+        return result ? true : false;
       }
       return false;
     } catch (error) {
@@ -21,20 +24,32 @@ export class AuthService {
 
   private static async verifyPlayerById(playerId: number): Promise<boolean> {
     const [result] = await pool.execute<RowDataPacket[]>(
-      AuthQueries.findPlayerById,
+      AuthQueries.findPlayerCountById,
       [playerId]
     );
     return result?.length > 0 ? result[0].count === 1 : false;
   }
 
-  private static async verifyPlayerByIdentifier(
+  public static async verifyPlayerByIdentifier(
     identifier: string
-  ): Promise<boolean> {
+  ): Promise<PasswordSchema | null> {
     const [result] = await pool.execute<RowDataPacket[]>(
       AuthQueries.findPlayerByIdentifier,
       [identifier, identifier]
     );
-    return result?.length > 0;
+    return result?.length > 0 ? (result[0] as PasswordSchema) : null;
   }
 
+  public static async updatePassword(
+    playerId: number,
+    password: string
+  ): Promise<boolean> {
+    const hashedPassword = await encryptPassword(password);
+    const [result] = await pool.execute<ResultSetHeader>(
+      AuthQueries.updatePassword,
+      [hashedPassword, playerId]
+    );
+
+    return result.affectedRows > 0;
+  }
 }

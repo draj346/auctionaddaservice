@@ -12,4 +12,4 @@ export const JWT_SECRET = process.env.JWT_SECRET!;
 export const FILE_UPLOAD_LOCATION = process.env.FILE_UPLOAD_LOCATION!;
 export const OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES 
   ? parseInt(process.env.OTP_EXPIRY_MINUTES) 
-  : 5;
+  : 2;

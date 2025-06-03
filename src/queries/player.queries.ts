@@ -17,6 +17,4 @@ export const PlayerQueries = {
       isAdmin = ?
     WHERE playerId = ?`,
   getPlayers: `SELECT playerId, name, email FROM players`,
-  findPlayerByIdentifier: `SELECT playerId, password FROM players WHERE email = ? OR mobile = ?`,
-  updatePassword: `UPDATE players SET password = ? WHERE playerId = ?`
 };

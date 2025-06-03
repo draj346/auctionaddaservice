@@ -44,7 +44,11 @@ export class OTPService {
         return otpStore.get(identifier)?.verified || false;
     }
 
-    invalidateOTP(identifier: string): void {
-        otpStore.delete(identifier);
+    invalidateOTP(sessionId: string): void {
+        otpStore.delete(sessionId);
+    }
+
+    getIdentifier(sessionId: string): string {
+        return otpStore.get(sessionId)?.identifier || '';
     }
 }

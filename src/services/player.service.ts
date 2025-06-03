@@ -6,7 +6,6 @@ import {
   UpdateProfileSchemaData,
   PlayerExistsSchema,
 } from "../types/player.types";
-import { encryptPassword } from "../utils/encryption";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export class PlayerService {
@@ -66,25 +65,4 @@ export class PlayerService {
     return players as Player[];
   }
 
-  async findPlayerByIdentifier(identifier: string): Promise<Player | null> {
-    const [players] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.findPlayerByIdentifier,
-      [identifier, identifier]
-    );
-
-    return players.length > 0 ? (players[0] as Player) : null;
-  }
-
-  async updatePassword(
-    playerId: number,
-    newPassword: string
-  ): Promise<boolean> {
-    const hashedPassword = await encryptPassword(newPassword);
-    const [result] = await pool.execute<ResultSetHeader>(
-      PlayerQueries.updatePassword,
-      [hashedPassword, playerId]
-    );
-
-    return result.affectedRows > 0;
-  }
 }

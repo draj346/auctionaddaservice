@@ -1,5 +1,6 @@
 import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
+import { OTP_EXPIRY_MINUTES } from "../config/env";
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ export class EmailService {
       <div>
         <h3>Verification Code</h3>
         <p>Your OTP is: <strong>${code}</strong></p>
-        <p>Expires in 5 minutes.</p>
+        <p>Expires in ${OTP_EXPIRY_MINUTES} minutes.</p>
       </div>
     `,
     };

@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { OTPService } from "../services/otp.service";
-import { PlayerService } from "../services/player.service";
 import {
   LoginRequest,
   OTPSendRequest,
@@ -9,7 +8,7 @@ import {
 } from "../types/auth.types";
 import jwt from "jsonwebtoken";
 import { JWT_SECRET } from "../config/env";
-import { comparePassword } from "../utils/encryption";
+import { comparePassword, encryptPassword } from "../utils/encryption";
 import { EmailService } from "../services/email.service";
 import { SmsService } from "../services/sms.service";
 import { ApiResponse } from "../utils/apiResponse";
@@ -18,17 +17,15 @@ import { AuthService } from "../services/auth.service";
 const otpService = new OTPService();
 const emailService = new EmailService();
 const smsService = new SmsService();
-const playerService = new PlayerService();
 
 export class AuthController {
   static sendOTP = async (req: Request, res: Response) => {
     try {
       const { identifier, method }: OTPSendRequest = req.body;
 
-      // Validate identifier format based on method
       if (method === "email" && !identifier.includes("@")) {
         return ApiResponse.error(res, "Invalid email format", 400);
-      } else if (method === "sms" && !/^\d{10,}$/.test(identifier)) {
+      } else if (method === "otp" && !/^\d{10,}$/.test(identifier)) {
         return ApiResponse.error(res, "Invalid phone number", 400);
       }
 
@@ -37,7 +34,8 @@ export class AuthController {
         return ApiResponse.error(res, "User is not valid", 401);
       }
 
-      const sessionId = `session_${Date.now()}_${identifier}`;
+      const sessionId = await encryptPassword(`session_${identifier}`);
+      otpService.invalidateOTP(sessionId);
       const code = otpService.storeOTP(sessionId, identifier);
       
       let isSuccess;
@@ -62,15 +60,15 @@ export class AuthController {
 
   static verifyOTP = async (req: Request, res: Response) => {
     try {
-      const { uniqueIdentifier, code }: OTPVerifyRequest = req.body;
+      const { sessionId, code }: OTPVerifyRequest = req.body;
 
-      const identifier = otpService.verifyOTP(uniqueIdentifier, code);
+      const identifier = otpService.verifyOTP(sessionId, code);
       if (!!identifier) {
         const isValidUser = await AuthService.isValidUser(null, identifier);
         if (!isValidUser) {
           return ApiResponse.error(res, "User is not valid", 401);
         } else {
-          ApiResponse.success(res, null, 200, "OTP verified successfully");
+          ApiResponse.success(res, {}, 200, "OTP verified successfully");
         }
       } else {
         ApiResponse.error(res, "Invalid OTP or expired", 400);
@@ -85,35 +83,27 @@ export class AuthController {
 
   static resetPassword = async (req: Request, res: Response) => {
     try {
-      const {
-        identifier,
-        newPassword,
-        uniqueIdentifier,
-      }: ResetPasswordRequest = req.body;
+      const { sessionId, password }: ResetPasswordRequest = req.body;
 
-      if (!otpService.isOTPVerified(uniqueIdentifier)) {
+      if (!otpService.isOTPVerified(sessionId)) {
         return ApiResponse.error(res, "OTP not verified for this session", 400);
       }
 
-      const isValidUser = await AuthService.isValidUser(null, identifier);
-      if (!isValidUser) {
-        return ApiResponse.error(res, "User is not valid", 401);
-      }
+      const identifier = otpService.getIdentifier(sessionId);
 
-      // Find player by identifier (email or phone)
-      const player = await playerService.findPlayerByIdentifier(identifier);
+      const player = await AuthService.verifyPlayerByIdentifier(identifier);
       if (!player) {
         return ApiResponse.error(res, "Player not found", 401);
       }
 
-      const success = await playerService.updatePassword(
+      const success = await AuthService.updatePassword(
         player.playerId,
-        newPassword
+        password
       );
 
       if (success) {
-        otpService.invalidateOTP(uniqueIdentifier);
-        ApiResponse.success(res, null, 200, "Password reset successfully");
+        otpService.invalidateOTP(sessionId);
+        ApiResponse.success(res, {}, 200, "Password reset successfully");
       } else {
         ApiResponse.error(res, "Password reset failed", 500);
       }
@@ -128,7 +118,7 @@ export class AuthController {
   static login = async (req: Request, res: Response) => {
     try {
       const { identifier, method, password, otp, uniqueIdentifier }: LoginRequest = req.body;
-      const player = await playerService.findPlayerByIdentifier(identifier);
+      const player = await AuthService.verifyPlayerByIdentifier(identifier);
 
       if (!player) {
         return ApiResponse.error(res, "Player is not available", 401);
@@ -160,4 +150,5 @@ export class AuthController {
       );
     }
   };
+
 }

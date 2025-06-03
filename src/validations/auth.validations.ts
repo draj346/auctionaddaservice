@@ -8,11 +8,11 @@ import {
 
 export const sendOTPSchema = Joi.object<OTPSendRequest>({
     identifier: Joi.string().required(),
-    method: Joi.string().valid('email', 'sms').required()
+    method: Joi.string().valid('email', 'otp').required()
 });
 
 export const verifyOTPSchema = Joi.object<OTPVerifyRequest>({
-    uniqueIdentifier: Joi.string().required(),
+    sessionId: Joi.string().required(),
     code: Joi.string().length(6).pattern(/^\d+$/).required()
         .messages({
             'string.length': 'OTP must be exactly 6 digits',
@@ -21,10 +21,8 @@ export const verifyOTPSchema = Joi.object<OTPVerifyRequest>({
 });
 
 export const resetPasswordSchema = Joi.object<ResetPasswordRequest>({
-    identifier: Joi.string().required(),
-    method: Joi.string().valid('email', 'sms').required(),
-    uniqueIdentifier: Joi.string().required(),
-    newPassword: Joi.string().min(6).required()
+    sessionId: Joi.string().required(),
+    password: Joi.string().min(6).required()
 });
 
 export const loginSchema = Joi.object<LoginRequest>({

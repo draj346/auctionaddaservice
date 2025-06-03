@@ -2,7 +2,7 @@ CREATE TABLE players (
   playerId INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   mobile VARCHAR(20) NOT NULL UNIQUE,
-  email VARCHAR(255),
+  email VARCHAR(255) NULL UNIQUE,
   jerseyNumber INT,
   tShirtSize VARCHAR(10),
   lowerSize VARCHAR(10),
