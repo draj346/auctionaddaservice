@@ -43,6 +43,8 @@ export interface UpdateProfileSchemaData {
 }
 
 export interface PlayerExistsSchema {
-  playerId: number;
-  isRegistered: boolean;
+  playerId?: number;
+  isRegistered?: boolean;
+  duplicateEmail?: boolean;
+  duplicateMobile?: boolean;
 }

@@ -36,28 +36,29 @@ export class FileController {
             name: req.file.filename,
             path: imagePath,
             url,
-            fileId
+            fileId,
           });
         } else {
           result = await fileService.uploadFile({
             name: req.file.filename,
             path: imagePath,
-            url
+            url,
           });
         }
         if (result) {
-          return ApiResponse.success(res, { fileId: result}, 200, "Image uploaded successfully");
+          return ApiResponse.success(
+            res,
+            { fileId: result },
+            200,
+            "Image uploaded successfully"
+          );
         } else {
           return ApiResponse.error(res, "Upload failed");
         }
       });
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Upload failed"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Uploading failed. Please try again.");
     }
   };
-
- 
 }

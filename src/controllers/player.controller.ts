@@ -16,14 +16,12 @@ export class PlayerController {
       ApiResponse.success(
         res,
         { ...playerInfo },
-        201,
+        200,
         "Registration initiated successfully"
       );
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
@@ -43,10 +41,8 @@ export class PlayerController {
         ApiResponse.error(res, "Player not found or update failed", 401);
       }
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
@@ -55,10 +51,8 @@ export class PlayerController {
       const players = await playerService.getPlayers();
       ApiResponse.success(res, players, 200, "Players retrieved successfully");
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 }

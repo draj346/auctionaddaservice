@@ -13,6 +13,7 @@ import { EmailService } from "../services/email.service";
 import { SmsService } from "../services/sms.service";
 import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
+import { ErrorMessage } from "../constants/constants";
 
 const otpService = new OTPService();
 const emailService = new EmailService();
@@ -37,7 +38,7 @@ export class AuthController {
       const sessionId = await encryptPassword(`session_${identifier}`);
       otpService.invalidateOTP(sessionId);
       const code = otpService.storeOTP(sessionId, identifier);
-      
+
       let isSuccess;
       if (method === "email") {
         isSuccess = await emailService.sendOTP(identifier, code);
@@ -51,10 +52,8 @@ export class AuthController {
         ApiResponse.error(res, "SMS Failed");
       }
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
@@ -74,10 +73,8 @@ export class AuthController {
         ApiResponse.error(res, "Invalid OTP or expired", 400);
       }
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
@@ -91,7 +88,10 @@ export class AuthController {
 
       const identifier = otpService.getIdentifier(sessionId);
 
-      const player = await AuthService.verifyPlayerByIdentifier(identifier);
+      const player = await AuthService.verifyPlayerByIdentifier(
+        identifier,
+        true
+      );
       if (!player) {
         return ApiResponse.error(res, "Player not found", 401);
       }
@@ -108,47 +108,72 @@ export class AuthController {
         ApiResponse.error(res, "Password reset failed", 500);
       }
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
   static login = async (req: Request, res: Response) => {
     try {
-      const { identifier, method, password, otp, uniqueIdentifier }: LoginRequest = req.body;
-      const player = await AuthService.verifyPlayerByIdentifier(identifier);
+      const { identifier, method, password, code, sessionId }: LoginRequest =
+        req.body;
 
-      if (!player) {
-        return ApiResponse.error(res, "Player is not available", 401);
+      if (!method) {
+        return ApiResponse.error(res, "Authentication method required", 400);
       }
 
+      let player;
       let isValid = false;
 
-      if (method === "password" && password && player.password) {
-        isValid = await comparePassword(password, player.password);
-      } else if (method === "otp" && otp) {
-        const id = otpService.verifyOTP(uniqueIdentifier, otp);
-        isValid = identifier === id;
+      if (method === "otp") {
+        if (!sessionId || !code) {
+          return ApiResponse.error(res, ErrorMessage.MISSING_PARAMS, 400);
+        }
+
+        const playerId = otpService.verifyOTP(sessionId, code);
+        if (!playerId) {
+          return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
+        }
+
+        player = await AuthService.verifyPlayerByIdentifier(playerId, true);
+      } else if (method === "password") {
+        if (!identifier || !password) {
+          return ApiResponse.error(res, ErrorMessage.MISSING_PARAMS, 400);
+        }
+
+        player = await AuthService.verifyPlayerByIdentifier(identifier, true);
+        if (player) {
+          isValid = await comparePassword(password, player.password);
+        }
+      } else {
+        return ApiResponse.error(res, "Unsupported authentication method", 400);
       }
 
-      if (!isValid) {
-        return ApiResponse.error(res, "Invalid credentials", 401);
+      if (!player) {
+        return ApiResponse.error(res, ErrorMessage.PLAYER_NOT_FOUND, 401);
       }
 
-      // Generate JWT token
-      const token = jwt.sign({ playerId: player.playerId }, JWT_SECRET, {
+      if (method === "password" && !isValid) {
+        return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
+      }
+
+      if (sessionId) {
+        otpService.invalidateOTP(sessionId);
+      }
+
+      const token = jwt.sign({ playerId: player.playerId }, JWT_SECRET!, {
         expiresIn: "1d",
       });
 
       ApiResponse.success(res, { token }, 200, "Login successful");
     } catch (error) {
-      ApiResponse.error(
-        res,
-        error instanceof Error ? error.message : "Unknown error"
-      );
+      if (error instanceof jwt.JsonWebTokenError) {
+        return ApiResponse.error(res, "Token generation failed", 500);
+      }
+
+      const errorMessage =
+        error instanceof Error ? error.message : ErrorMessage.AUTH_ERROR;
+      ApiResponse.error(res, errorMessage, 500);
     }
   };
-
 }

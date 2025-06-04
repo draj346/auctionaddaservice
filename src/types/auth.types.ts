@@ -14,11 +14,11 @@ export interface ResetPasswordRequest {
 }
 
 export interface LoginRequest {
-  identifier: string;
-  method: 'password' | 'otp';
+  identifier?: string;
+  method?: 'password' | 'otp';
   password?: string;
-  otp?: string;
-  uniqueIdentifier: string;
+  code?: string;
+  sessionId?: string;
 }
 
 export interface PasswordSchema {

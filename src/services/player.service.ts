@@ -9,18 +9,50 @@ import {
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
 export class PlayerService {
-  async initialRegistration(
-    data: InitialRegistrationData
-  ): Promise<PlayerExistsSchema> {
-    const [existing] = await pool.execute<RowDataPacket[]>(
+  
+  async initialRegistration( data: InitialRegistrationData): Promise<PlayerExistsSchema> {
+    if (data.email) {
+      const [fullMatches] = await pool.execute<RowDataPacket[]>(
+        PlayerQueries.findFullMatch,
+        [data.mobile, data.email, data.name]
+      );
+
+      if (fullMatches.length > 0) {
+        const player = fullMatches[0];
+        return {
+          ...( player.isSubmitted !== 1 && {playerId: player.playerId}),
+          isRegistered: player.isSubmitted === 1,
+        };
+      }
+    }
+
+    let duplicateMobile = false;
+    let duplicateEmail = false;
+
+    const [mobileMatches] = await pool.execute<RowDataPacket[]>(
       PlayerQueries.findPlayerByMobile,
       [data.mobile]
     );
 
-    if (existing.length > 0) {
+    if (mobileMatches.length > 0) {
+      duplicateMobile = true;
+    }
+
+    if (data.email) {
+      const [emailMatches] = await pool.execute<RowDataPacket[]>(
+        PlayerQueries.findPlayerByEmail,
+        [data.email]
+      );
+
+      if (emailMatches.length > 0) {
+        duplicateEmail = true;
+      }
+    }
+
+    if (duplicateMobile || duplicateEmail) {
       return {
-        playerId: existing[0].playerId,
-        isRegistered: existing[0].isSubmitted === 1 ? true: false,
+        ...(duplicateMobile && { duplicateMobile: true }),
+        ...(duplicateEmail && { duplicateEmail: true }),
       };
     }
 
@@ -31,9 +63,9 @@ export class PlayerService {
 
     return {
       playerId: result.insertId,
-      isRegistered: false,
     };
   }
+
 
   async updateProfile(data: UpdateProfileSchemaData): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(

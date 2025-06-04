@@ -31,11 +31,15 @@ export class AuthService {
   }
 
   public static async verifyPlayerByIdentifier(
-    identifier: string
+    identifier: string,
+    isSubmitted: boolean = false
   ): Promise<PasswordSchema | null> {
+
+    const query = isSubmitted ? AuthQueries.findSubmittedPlayerByIdentifier : AuthQueries.findPlayerByIdentifier;
+    const parameter = isSubmitted ? [identifier, identifier, 1] : [identifier, identifier]; 
     const [result] = await pool.execute<RowDataPacket[]>(
-      AuthQueries.findPlayerByIdentifier,
-      [identifier, identifier]
+      query,
+      parameter
     );
     return result?.length > 0 ? (result[0] as PasswordSchema) : null;
   }
