@@ -1,0 +1,238 @@
+Feature
+1. Players
+	a. Add
+	b. Modify
+	c. Import
+	d. Export
+	e. Delete
+	g. View(Column based on Role)
+	h. Feeback by Owner
+	
+3. Category
+	a. Add
+	b. Modify
+	c. Delete
+	
+4. Auction
+	a. Create
+	b. Edit
+	c. Delete
+	f. Payment
+	
+5. Team
+	a. Create
+	b. Edit
+	c. Delete
+	e. Whishlist
+	
+6. Category_Player_Mapping
+	a. Add
+	b. Delete
+	
+7. Auction_Team_Player_Status_Mapping
+	a. Unsold, Sold or available
+	
+	
+DB
+1. players ---
+2. roles? ---
+3. auctions ---
+4. auction_teams  ---
+4. auction_teams_owner - points & Penalty ---
+
+4.1. auction_plans - not
+
+5. auction_category ----
+6. auction_players_category -----
+6. auction_teams_whislist ----
+7. player_feedback   ---- 
+8. auction_players_status --- 
+9. auction_teams_players . ----
+10. auction_oraniser
+
+
+Access Level
+1. SuperAdmin
+	1. Admin
+		1. Organizer
+			1. Owner
+				1. Player
+				
+SUPER_ADMIN, ADMIN, ORGANISER, Owner, Player
+				
+			
+SuperAdminCheck			
+1. CreateAdmin
+
+Admin
+1. All
+
+Organizer
+1. Create Auction
+2. Create Team
+3. Create_Team_Owner
+4. Auction_Plans
+5. Auction_category
+6. auction_players_category
+7. auction_players_status
+8. auction_teams_players
+
+Owner
+1. auction_teams_whislist
+2. player_feedback
+
+Player
+1. View everything
+
+
+
+
+Role
+1. SUPER_ADMIN
+2. ADMIN
+3. PLAYER
+4. NON_PLAYER
+5. ORGANISER
+6. Owner
+
+
+Role_permission
+
+
+
+CheckPermission(role, !role)
+1. For super_admin - bypass everything
+2. For admin - bypass everything except SUPER_ADMIN in permission
+
+API & Permission
+
+	
+1. createAdmin() - CheckPermission(Role, [SUPER_ADMIN])
+
+2. addPlayer() -CheckPermission(Role, [SUPER_ADMIN, ADMIN, ORGANISER])
+
+2.1. approvePlayer() -CheckPermission(Role, [SUPER_ADMIN, ADMIN])
+
+3. updatePlayer() -CheckPermission(Role, [SUPER_ADMIN, ADMIN, ORGANISER])
+
+3.1. updateProfile() //self
+
+4. deletePlayer() -CheckPermission(Role, [SUPER_ADMIN, ADMIN])
+
+5. exportPlayer() -CheckPermission(Role, [SUPER_ADMIN, ADMIN])
+
+6. importPlayer()-CheckPermission(Role, [SUPER_ADMIN, ADMIN])
+
+7. getPlayers()
+		inside 
+			For Admin, SUPER_ADMIN - GET * from players
+			
+			For ORGANISER, Owner - get name, email, mobile, amount
+			
+			For User - name, email, pic
+			
+8. CreateAuction() - anyone but only 1 pending
+
+9. doPayment()
+
+10. getAuction() - Self created auctions
+
+11. getLiveAuction() - All the auction which is live
+
+
+CheckOrganiserPermission()
+	1. auction <--> player id
+	2. Admin
+	3. SuperAdmin
+	
+
+
+
+12. EditAuction() - CheckOrganiserPermission()
+
+13. DeleteNonLiveAuction() - CheckOrganiserPermission()
+
+14. DeleteLiveAuction() -CheckPermission(Role, [ADMIN, SUPER_ADMIN]
+
+
+15. viewAuctionDetail() - CheckOrganiserPermission()
+	a. Edit
+	b. delete.
+	c. User will see list of all player name in left side or 50-50 end side which checkbox
+	d. Create Team
+
+15. assingPlayerToCategory()  - CheckOrganiserPermission()
+	-> Select 50 player -> assign to category button -> open modal where need to select my active auction from dropdown and Category Name and then save.
+		a. backend -> Create category -> Auction relation
+		b. Category_auction -> Player id
+	
+16. getAllCategory()
+
+17. editCategory - CheckOrganiserPermission()
+
+17 - deleteCategory  - CheckOrganiserPermission()
+
+18 - addTeam() - CheckOrganiserPermission()
+	-> select auction from dropdown, name, logo, short name and son one
+	a. backend -> create team
+	b. createm team and auction mapping table
+
+CheckOwnerWithOrganiserPermission(teamid)
+	1. team <--> playerid
+	2. auction <--> team
+	2. Admin
+	3. SuperAdmin
+	
+19. EdiTeam()  - CheckOwnerWithOrganiserPermission()
+
+20. DeleteTeam() - CheckOrganiserPermission()
+
+21. setFine() - CheckOrganiserPermission()
+
+22. ChangePlayerStatus()  - CheckOrganiserPermission(), SOLD, UNSOLD, AVAILABLE
+
+22.1. getPlayerStatus()
+
+20. setWishlist() - CheckOwnerOnly()
+
+21. setfeedback - CheckOwnerOnly()
+
+22. getAllFeedback()
+
+
+
+
+
+
+Frontend
+
+Left Side Menu
+
+1. Players
+	a. View All -> Select and Edit & delete, set Admin  
+	b. Add Player
+	c. Import Players
+	d. Export Players
+2. Auction
+	a. Create Auction
+	b. My Auctions -> Select and Edit & Delete
+	c. Live Auctions
+3. Teams
+	a. View Teams -> Select and Edit & Delete & Penalty, Add Owner to team
+	b. Add Teams
+	c. Whishlist Players
+4. Catergory
+	a. View category
+	b. Create Category
+	c. Assign Players to Category
+5. Feeback
+	a. Player Feeback
+
+
+Call API in middleware for first time
+return {
+	isAdmin: true || isSuperAdmin: true || isOrganiser: true || isOwner: true
+}
+
+For rest -> enable
+1. 

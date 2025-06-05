@@ -32,8 +32,5 @@ export const updateProfileSchema = Joi.object<UpdateProfileSchemaData>({
   image: Joi.number().allow('', null).min(1).max(100000).optional(),
   pricePerMatch: Joi.number().allow('', null).min(1).max(100000).optional(),
   willJoinAnyOwner: Joi.boolean().allow('', null).optional(),
-  isSubmitted: Joi.boolean().allow('').optional(),
-  isNonPlayer: Joi.boolean().allow('').optional(),
-  isOwner: Joi.boolean().allow('').optional(),
-  isAdmin: Joi.boolean().allow('').optional()
+  isSubmitted: Joi.boolean().allow('').optional()
 });

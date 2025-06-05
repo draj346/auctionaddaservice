@@ -1,0 +1,18 @@
+export const RegistrationQueries = {
+  findPlayerByMobile: `SELECT playerId, email, name, isSubmitted FROM players WHERE mobile = ?`,
+  findPlayerByEmail: `SELECT playerId, mobile, name, isSubmitted FROM players WHERE email = ?`,
+  findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ? AND name = ?`,
+  insertPlayer: `INSERT INTO players (name, mobile, email) VALUES (?, ?, ?)`,
+  updatePlayer: `
+    UPDATE players SET 
+      jerseyNumber = ?,
+      tShirtSize = ?,
+      lowerSize = ?,
+      hasCricheroesProfile = ?,
+      isPaidPlayer = ?,
+      pricePerMatch = ?,
+      willJoinAnyOwner = ?,
+      image = ?,
+      isSubmitted = ?,
+    WHERE playerId = ?`,
+};

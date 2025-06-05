@@ -11,13 +11,10 @@ export interface Player {
   pricePerMatch?: number;
   willJoinAnyOwner?: boolean;
   image?: string;
-  isSubmitted?: boolean;
-  modifiedAt?: Date;
-  createdAt?: Date;
-  isNonPlayer?: boolean;
-  isOwner?: boolean;
-  isAdmin?: boolean;
-  password?: string;
+  isSubmitted: boolean;
+  isApproved: boolean;
+  isActive: boolean;
+  isNonPlayer: boolean;
 }
 
 export interface InitialRegistrationData {
@@ -37,9 +34,6 @@ export interface UpdateProfileSchemaData {
   image: number;
   willJoinAnyOwner: boolean;
   isSubmitted: boolean;
-  isNonPlayer: boolean;
-  isOwner: boolean;
-  isAdmin: boolean;
 }
 
 export interface PlayerExistsSchema {
@@ -47,4 +41,11 @@ export interface PlayerExistsSchema {
   isRegistered?: boolean;
   duplicateEmail?: boolean;
   duplicateMobile?: boolean;
+}
+
+export interface PlayerBaseSchema {
+  playerId: number;
+  name: string;
+  mobile: string;
+  email?: string | null;
 }

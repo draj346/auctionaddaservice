@@ -5,6 +5,7 @@ import { PasswordSchema } from "../types/auth.types";
 import { encryptPassword } from "../utils/encryption";
 
 export class AuthService {
+  // This will be used before login. Without checking isSubmitted True
   static isValidUser = async (
     playerId: number | null,
     emailOrPhone?: string
@@ -25,7 +26,7 @@ export class AuthService {
   private static async verifyPlayerById(playerId: number): Promise<boolean> {
     const [result] = await pool.execute<RowDataPacket[]>(
       AuthQueries.findPlayerCountById,
-      [playerId]
+      [playerId, '1']
     );
     return result?.length > 0 ? result[0].count === 1 : false;
   }
@@ -55,5 +56,13 @@ export class AuthService {
     );
 
     return result.affectedRows > 0;
+  }
+
+  static isValidLoggedInUser = async(playerId: number) => {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      AuthQueries.findLoggedInPlayerCountById,
+      [playerId]
+    );
+    return result?.length > 0 ? result[0].count === 1 : false;
   }
 }

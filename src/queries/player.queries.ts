@@ -1,22 +1,5 @@
 export const PlayerQueries = {
-  findPlayerByMobile: `SELECT playerId, email, name, isSubmitted FROM players WHERE mobile = ?`,
-  findPlayerByEmail: `SELECT playerId, mobile, name, isSubmitted FROM players WHERE email = ?`,
-  findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ? AND name = ?`,
-  insertPlayer: `INSERT INTO players (name, mobile, email) VALUES (?, ?, ?)`,
-  updatePlayer: `
-    UPDATE players SET 
-      jerseyNumber = ?,
-      tShirtSize = ?,
-      lowerSize = ?,
-      hasCricheroesProfile = ?,
-      isPaidPlayer = ?,
-      pricePerMatch = ?,
-      willJoinAnyOwner = ?,
-      image = ?,
-      isSubmitted = ?,
-      isNonPlayer = ?,
-      isOwner = ?,
-      isAdmin = ?
-    WHERE playerId = ?`,
-  getPlayers: `SELECT playerId, name, email FROM players`,
+  getPlayers: `SELECT playerId, name, email, mobile, isPaidPlayer  ? FROM players where isActive = 1 AND isSubmitted = 1 AND isApproved = ?`,
+  getPlayersByAdmin: `pricePerMatch, isApproved, role`,
+  getInactivePlayers: `SELECT playerId, name, email, mobile, isPaidPlayer pricePerMatch, isApproved FROM players where isActive != 1?`
 };

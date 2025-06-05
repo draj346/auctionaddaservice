@@ -22,7 +22,7 @@ export class FileController {
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_LOCATION}${req.file.filename}`;
 
-        const playerId = req?.isAuthenticated ? req.userId : userId;
+        const playerId = req.userId || userId;
         const isValidUser = await AuthService.isValidUser(playerId);
         if (!isValidUser) {
           fileService.deleteUploadedFile(imagePath);

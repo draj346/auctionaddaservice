@@ -1,42 +1,31 @@
-import { Request, Response, NextFunction } from 'express';
-import jwt from 'jsonwebtoken';
-import { JWT_SECRET } from '../config/env';
-import { ApiResponse } from '../utils/apiResponse';
-import { AuthService } from '../services/auth.service';
-
-// Extend Express Request interface
-declare global {
-  namespace Express {
-    interface Request {
-      userId?: number;
-      isAuthenticated?: boolean;
-    }
-  }
-}
+import { Request, Response, NextFunction } from "express";
+import jwt from "jsonwebtoken";
+import { JWT_SECRET } from "../config/env";
+import { ApiResponse } from "../utils/apiResponse";
+import { AuthService } from "../services/auth.service";
+import { AuthTokenPayload } from "../types/request.types";
 
 export const authMiddleware = async (
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  const authHeader = req.headers.authorization;
-  
-  if (!authHeader?.startsWith('Bearer ')) {
-    return ApiResponse.error(res, 'Unauthorized: No token provided', 401);
-  }
+  const token = req.headers.authorization?.split(" ")[1];
+  if (!token)
+    return ApiResponse.error(res, "Unauthorized: No token provided", 401);
 
-  const token = authHeader.split(' ')[1];
-  
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as { playerId: number };
-    const isValidUser = await AuthService.isValidUser(decoded.playerId);
-    if (!isValidUser) {
-       return ApiResponse.error(res, 'Unauthorized: Invalid token', 401);
+    const decoded = jwt.verify(token, JWT_SECRET) as AuthTokenPayload;
+    const userInfo = await AuthService.isValidLoggedInUser(decoded.playerId);
+    if (!userInfo) {
+      return ApiResponse.error(res, "User not found", 401);
     }
+
     req.userId = decoded.playerId;
-    req.isAuthenticated = true;
+    req.role = decoded.role;
+    
     next();
   } catch (err) {
-    return ApiResponse.error(res, 'Unauthorized: Invalid token', 401);
+    return ApiResponse.error(res, "Unauthorized: Invalid token", 401);
   }
 };

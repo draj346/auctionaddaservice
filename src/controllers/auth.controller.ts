@@ -14,6 +14,7 @@ import { SmsService } from "../services/sms.service";
 import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
 import { ErrorMessage } from "../constants/constants";
+import { RoleService } from "../services/role.service";
 
 const otpService = new OTPService();
 const emailService = new EmailService();
@@ -161,11 +162,23 @@ export class AuthController {
         otpService.invalidateOTP(sessionId);
       }
 
-      const token = jwt.sign({ playerId: player.playerId }, JWT_SECRET!, {
+      const role = await RoleService.getUserRole(player.playerId )
+
+      const tokenPayload = { playerId: player.playerId, role };
+
+      const token = jwt.sign(tokenPayload, JWT_SECRET!, {
         expiresIn: "1d",
       });
 
-      ApiResponse.success(res, { token }, 200, "Login successful");
+      const isAdmin = true;
+
+      // Need to modify while working on frontend
+      const responsePayload = {
+        token,
+        ...(isAdmin ? { isAdmin: true } : {}),
+      };
+
+      ApiResponse.success(res, responsePayload, 200, "Login successful");
     } catch (error) {
       if (error instanceof jwt.JsonWebTokenError) {
         return ApiResponse.error(res, "Token generation failed", 500);
