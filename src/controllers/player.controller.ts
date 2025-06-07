@@ -42,7 +42,7 @@ export class PlayerController {
     }
   };
 
-  static exportPlayers = async (req: Request, res: Response) => {
+  static exportPlayers = async (req: Request, res: Response): Promise<void> => {
     try {
       const players = await playerService.getPlayerForExport();
 
@@ -84,7 +84,8 @@ export class PlayerController {
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-      return res.send(buffer);
+      res.send(buffer)
+      return;
     } catch (error) {
       console.error("Export error:", error);
       return ApiResponse.error(res, "Failed to generate export file", 500);
