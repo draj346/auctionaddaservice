@@ -3,31 +3,25 @@ import { Request } from "express";
 import { PlayerQueries } from "../queries/player.queries";
 import { Player } from "../types/player.types";
 import { RowDataPacket } from "mysql2";
+import { RoleQueries } from "../queries/role.queries";
 
 export class PlayerService {
-  async getPlayers(req: Request): Promise<Player[]> {
-    if (req.isAdmin) {
-      const [players] = await pool.execute<RowDataPacket[]>(
-        PlayerQueries.getPlayers
-      );
-      return players as Player[];
-    }
-
-    const [userPlayers] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.getPlayerById,
-      [req.userId]
-    );
-    
-    const [teamPlayers] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.getPlayerByTeamOwnerId,
+  async getPlayers(req: Request, isActive: boolean = true): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      PlayerQueries.getPlayers(req.role, isActive),
       [req.userId]
     );
 
-    const playerMap = new Map();
-    [...userPlayers, ...teamPlayers].forEach((player) => {
-      playerMap.set(player.playerId, player);
-    });
-
-    return Array.from(playerMap.values()) as Player[];
+    return result.length > 0 ? (result as Player[]) : [];
   }
+
+  async getPlayerById(req: Request, playerId: number): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      PlayerQueries.getPlayerById(req.role, playerId),
+      [req.userId]
+    );
+
+    return result.length > 0 ? (result as Player[]) : [];
+  }
+
 }

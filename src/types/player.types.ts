@@ -49,3 +49,6 @@ export interface PlayerBaseSchema {
   mobile: string;
   email?: string | null;
 }
+export interface PlayerIdSchema {
+   playerId: number;
+}

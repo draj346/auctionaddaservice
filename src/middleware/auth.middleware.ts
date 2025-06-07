@@ -20,7 +20,7 @@ export const authMiddleware = async (
     if (!userInfo) {
       return ApiResponse.error(res, "User not found", 401);
     }
-
+    
     req.userId = decoded.playerId;
     req.role = decoded.role;
     

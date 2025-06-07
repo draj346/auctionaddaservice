@@ -65,7 +65,6 @@ export class RegistrationService {
     };
   }
 
-
   async updateProfile(data: UpdateProfileSchemaData): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
       RegistrationQueries.updatePlayer,

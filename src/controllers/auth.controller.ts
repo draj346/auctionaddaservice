@@ -162,20 +162,17 @@ export class AuthController {
         otpService.invalidateOTP(sessionId);
       }
 
-      const role = await RoleService.getUserRole(player.playerId )
-
+      const role = await RoleService.getUserRole(player.playerId);
       const tokenPayload = { playerId: player.playerId, role };
 
       const token = jwt.sign(tokenPayload, JWT_SECRET!, {
         expiresIn: "1d",
       });
 
-      const isAdmin = true;
-
       // Need to modify while working on frontend
       const responsePayload = {
         token,
-        ...(isAdmin ? { isAdmin: true } : {}),
+        role,
       };
 
       ApiResponse.success(res, responsePayload, 200, "Login successful");

@@ -13,12 +13,17 @@ export class RegistrationController {
     try {
       const data: InitialRegistrationData = req.body;
       const playerInfo = await registrationService.initialRegistration(data);
-      ApiResponse.success(
-        res,
-        { ...playerInfo },
-        200,
-        "Registration initiated successfully"
-      );
+      if (playerInfo.playerId) {
+        ApiResponse.success(
+          res,
+          { ...playerInfo },
+          200,
+          "Registration initiated successfully"
+        );
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again.", 200, playerInfo);
+      }
+      
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.");

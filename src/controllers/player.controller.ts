@@ -5,9 +5,36 @@ import { ApiResponse } from "../utils/apiResponse";
 const playerService = new PlayerService();
 
 export class PlayerController {
+
   static getPlayers = async (req: Request, res: Response) => {
     try {
       const players = await playerService.getPlayers(req);
+      ApiResponse.success(res, players, 200, "Players retrieved successfully");
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
+    }
+  };
+
+  static getPlayersById = async (req: Request, res: Response) => {
+    try {
+      const { playerId } = req.body;
+
+      if (!playerId) {
+        return ApiResponse.error(res, "Required Player Id", 400);
+      }
+
+      const players = await playerService.getPlayerById(req, playerId);
+      ApiResponse.success(res, players, 200, "Players retrieved successfully");
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
+    }
+  };
+
+  static getInactivePlayers = async (req: Request, res: Response) => {
+    try {
+      const players = await playerService.getPlayers(req, false);
       ApiResponse.success(res, players, 200, "Players retrieved successfully");
     } catch (error) {
       console.log(error);

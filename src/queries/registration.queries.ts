@@ -13,6 +13,6 @@ export const RegistrationQueries = {
       pricePerMatch = ?,
       willJoinAnyOwner = ?,
       image = ?,
-      isSubmitted = ?,
-    WHERE playerId = ?`,
+      isSubmitted = ?
+    WHERE playerId = ?`
 };

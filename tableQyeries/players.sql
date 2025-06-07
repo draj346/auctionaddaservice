@@ -1,14 +1,14 @@
 CREATE TABLE players (
   playerId INT AUTO_INCREMENT PRIMARY KEY,
-  name VARCHAR(255) NOT NULL,
-  mobile VARCHAR(20) NOT NULL UNIQUE,
-  email VARCHAR(255) NULL UNIQUE,
-  jerseyNumber VARCHAR(5),
-  tShirtSize VARCHAR(10),
-  lowerSize VARCHAR(10),
+  name VARCHAR(180) NOT NULL,
+  mobile VARCHAR(15) NOT NULL,
+  email VARCHAR(50) NULL,
+  jerseyNumber TINYINT UNSIGNED NULL,
+  tShirtSize ENUM('XS','S','M','L','XL','XXL') NULL,
+  lowerSize ENUM('XS','S','M','L','XL','XXL') NULL,
   hasCricheroesProfile BOOLEAN,
   isPaidPlayer BOOLEAN,
-  pricePerMatch DECIMAL(10,2),
+  pricePerMatch DECIMAL(6,2) UNSIGNED,
   willJoinAnyOwner BOOLEAN,
   image INT,
   isSubmitted BOOLEAN DEFAULT false,
@@ -17,11 +17,11 @@ CREATE TABLE players (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT true,
   isNonPlayer BOOLEAN DEFAULT false,
-  password VARCHAR(255),
-  INDEX (isActive),
-  INDEX (isSubmitted),
-  INDEX (isApproved),
-  INDEX (isNonPlayer)
+  password CHAR(60) NOT NULL,
+  UNIQUE KEY mobile_unique (mobile),
+  UNIQUE KEY email_unique (email),
+  INDEX idx_status_flags (isActive, isApproved, isNonPlayer),
+  INDEX idx_image (image)
 ) AUTO_INCREMENT=10001;
 
 CREATE TABLE roles (

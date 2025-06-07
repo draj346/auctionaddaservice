@@ -18,12 +18,14 @@ export class ApiResponse {
         res: Response, 
         message: string = 'Internal Server Error', 
         statusCode: number = 500,
-        error?: any
+        error?: any,
+        type?:any
     ) {
         res.status(statusCode).json({
             success: false,
             message,
-            error: error?.message || error
+            error: error?.message || error,
+            type
         });
     }
 }
