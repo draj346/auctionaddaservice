@@ -67,3 +67,16 @@ export interface PlayerBaseSchema {
 export interface PlayerIdSchema {
    playerId: number;
 }
+
+export interface AddProfileExcelSchema {
+  'Full Name': string; 
+  'Mobile': string;
+  'Email': number;
+  'Jersey Number': number;
+  'T-Shirt Size': string;
+  'Lower Size': string;
+  'Has Cricheroes Profile': boolean;
+  'Is Paid Player': boolean;
+  'Price Per Match': number;
+  'Will Join Any Owner': boolean;
+}

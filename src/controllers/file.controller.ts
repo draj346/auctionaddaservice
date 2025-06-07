@@ -1,9 +1,9 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
-import upload from "../utils/multerConfig";
 import { AuthService } from "../services/auth.service";
 import { FileService } from "../services/file.service";
 import { FILE_UPLOAD_LOCATION } from "../config/env";
+import { upload } from "../utils/multerConfig";
 
 const fileService = new FileService();
 

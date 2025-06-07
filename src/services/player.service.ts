@@ -15,6 +15,14 @@ export class PlayerService {
     return result.length > 0 ? (result as Player[]) : [];
   }
 
+  async getPlayerForExport(): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      PlayerQueries.getPlayerForExport(),
+    );
+
+    return result.length > 0 ? (result as Player[]) : [];
+  }
+
   async getPlayerById(req: Request, playerId: number): Promise<Player[]> {
     const [result] = await pool.execute<RowDataPacket[]>(
       PlayerQueries.getPlayerById(req.role, playerId),

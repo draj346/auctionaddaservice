@@ -1,5 +1,6 @@
 import { PlayerRole, ROLES } from "../constants/roles.constants";
 import { RoleHelper } from "../helpers/roles.helpers";
+import * as XLSX from 'xlsx';
 
 const queries = {
   getPlayers: (role: PlayerRole) => {
@@ -90,7 +91,37 @@ const queries = {
 
   approvePlayer: (ids: string) => {
      return `update players set isApproved = 1 where playerId IN (${ids})`;
-  }
+  },
+  getPlayerForExport: `SELECT 
+                        name AS "Full Name",
+                        mobile AS "Mobile",
+                        email AS "Email",
+                        jerseyNumber AS "Jersey Number",
+                        tShirtSize AS "T-Shirt Size",
+                        lowerSize AS "Lower Size",
+                        CASE 
+                          WHEN hasCricheroesProfile = 1 THEN 'True'
+                          WHEN hasCricheroesProfile = 0 THEN 'False'
+                          ELSE ''
+                        END AS "Has Cricheroes Profile",
+                        CASE 
+                          WHEN isPaidPlayer = 1 THEN 'True'
+                          WHEN isPaidPlayer = 0 THEN 'False'
+                          ELSE ''
+                        END AS "Is Paid Player",
+                        pricePerMatch AS "Price Per Match",
+                        CASE 
+                          WHEN willJoinAnyOwner = 1 THEN 'True'
+                          WHEN willJoinAnyOwner = 0 THEN 'False'
+                          ELSE ''
+                        END AS "Will Join Any Owner",
+                        CASE 
+                          WHEN isActive = 1 THEN 'True'
+                          WHEN isActive = 0 THEN 'False'
+                          ELSE ''
+                        END AS "Status"
+                      FROM players;`
+
 };
 
 export class PlayerQueries {
@@ -110,6 +141,10 @@ export class PlayerQueries {
 
   public static approvePlayer = (playerIds: number[]) => {
     return queries.approvePlayer(playerIds.join())
+  }
+
+  public static getPlayerForExport = () => {
+     return queries.getPlayerForExport;
   }
 }
 

@@ -10,3 +10,7 @@ export interface FileSchemaProps {
   url: string;
   fileId?: number;
 }
+
+export interface ExcelFileData {
+  file: string;
+}

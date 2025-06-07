@@ -5,6 +5,7 @@ import {
   UpdateProfileSchemaData,
   PlayerExistsSchema,
   AddProfileSchemaData,
+  AddProfileExcelSchema,
 } from "../types/player.types";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -160,6 +161,60 @@ export class RegistrationService {
     );
 
     return result.affectedRows > 0;
+  }
+
+   async createProfileForExcel( data: AddProfileExcelSchema): Promise<PlayerExistsSchema> {
+    if (data['Email']) {
+      const [fullMatches] = await pool.execute<RowDataPacket[]>(
+        RegistrationQueries.findFullMatch,
+        [data['Mobile'], data['Email'], data['Full Name']]
+      );
+      if (fullMatches.length > 0) {
+        throw new Error("Mobile, Email and Name already exists");
+      }
+    }
+
+    const [mobileMatches] = await pool.execute<RowDataPacket[]>(
+      RegistrationQueries.findPlayerByMobile,
+      [data['Mobile']]
+    );
+
+    if (mobileMatches.length > 0) {
+      throw new Error("Mobile number already exists");
+    }
+
+    if (data['Email']) {
+      const [emailMatches] = await pool.execute<RowDataPacket[]>(
+        RegistrationQueries.findPlayerByEmail,
+        [data['Email']]
+      );
+
+      if (emailMatches.length > 0) {
+        throw new Error("Email already exists");
+      }
+    }
+
+    const [result] = await pool.execute<ResultSetHeader>(
+      RegistrationQueries.createPlayer,
+      [
+        data['Full Name'],
+        data['Mobile'],
+        data['Email'] || null,
+        data['Jersey Number'] || null,
+        data['T-Shirt Size'] || null,
+        data['Lower Size'] || null,
+        data['Has Cricheroes Profile'] === undefined ? null : data['Has Cricheroes Profile'],
+        data['Is Paid Player'] === undefined ? null : data['Is Paid Player'],
+        data['Price Per Match'] || null,
+        data['Will Join Any Owner'] === undefined ? null : data['Will Join Any Owner'],
+        null,
+        true,
+      ]
+    );
+
+    return {
+      playerId: result.insertId,
+    };
   }
 
 }
