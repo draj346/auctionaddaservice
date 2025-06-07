@@ -3,7 +3,7 @@ import { PlayerRole } from "../constants/roles.constants";
 declare global {
   namespace Express {
     interface Request {
-      userId?: number;
+      userId: number;
       role: PlayerRole;
     }
   }

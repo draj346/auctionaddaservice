@@ -10,7 +10,7 @@ export class RoleController {
     const payload = { isAccessDenied: true } as ErrorResponsePayload;
     try {
       const playerId = parseInt(req.params.playerId);
-      const players = await roleService.createAdmin(playerId);
+      await roleService.createAdmin(playerId);
       ApiResponse.success(res, {}, 200, "Admin created successfully");
     } catch (error) {
       console.log(error);
@@ -27,7 +27,7 @@ export class RoleController {
     const payload = { isAccessDenied: true } as ErrorResponsePayload;
     try {
       const playerId = parseInt(req.params.playerId);
-      const players = await roleService.deleteRole(playerId);
+      await roleService.deleteRole(playerId);
       ApiResponse.success(res, {}, 200, "Role remove successfully");
     } catch (error) {
       console.log(error);
@@ -48,7 +48,7 @@ export class RoleController {
         return ApiResponse.error(res, "You can't approve yourself", 400, { isAccessDenied: true });
       }
 
-      const players = await roleService.approvePlayers(playerIds);
+      await roleService.approvePlayers(playerIds);
       ApiResponse.success(res, {}, 200, "Players approved successfully");
     } catch (error) {
       console.log(error);

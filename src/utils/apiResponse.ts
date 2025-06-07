@@ -25,7 +25,7 @@ export class ApiResponse {
             success: false,
             message,
             error: error?.message || error,
-            type
+            ...(type && typeof type === 'object' ? type : {})
         });
     }
 }

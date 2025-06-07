@@ -5,6 +5,7 @@ export const RegistrationQueries = {
   insertPlayer: `INSERT INTO players (name, mobile, email) VALUES (?, ?, ?)`,
   updatePlayer: `
     UPDATE players SET 
+      name = ?,
       jerseyNumber = ?,
       tShirtSize = ?,
       lowerSize = ?,
@@ -14,5 +15,8 @@ export const RegistrationQueries = {
       willJoinAnyOwner = ?,
       image = ?,
       isSubmitted = ?
-    WHERE playerId = ?`
+    WHERE playerId = ?`,
+    createPlayer: `INSERT INTO players (name, mobile, email, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
+                    isPaidPlayer, pricePerMatch, willJoinAnyOwner, image, isSubmitted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    deletePlayer: `UPDATE players SET isActive = 0 WHERE playerId = ?`,
 };

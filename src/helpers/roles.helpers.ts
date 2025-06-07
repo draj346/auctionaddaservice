@@ -20,4 +20,12 @@ export class RoleHelper {
     static isAdminAndAbove(role: PlayerRole) {
         return ([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]).includes(role);
     }
+
+    static isOrganiserAndAbove(role: PlayerRole) {
+        return ([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]).includes(role);
+    }
+
+    static isOwnerOrBelow(role: PlayerRole) {
+        return ([ROLES.OWNER, ROLES.PLAYER] as PlayerRole[]).includes(role);
+    }
 }

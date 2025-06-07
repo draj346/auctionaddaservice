@@ -24,6 +24,7 @@ export interface InitialRegistrationData {
 }
 
 export interface UpdateProfileSchemaData {
+  name: string;
   playerId: number;
   jerseyNumber: number;
   tShirtSize: string;
@@ -33,8 +34,22 @@ export interface UpdateProfileSchemaData {
   pricePerMatch: number;
   image: number;
   willJoinAnyOwner: boolean;
-  isSubmitted: boolean;
 }
+
+export interface AddProfileSchemaData {
+  name: string;
+  mobile: string;
+  email?: string;
+  jerseyNumber: number;
+  tShirtSize: string;
+  lowerSize: string;
+  hasCricheroesProfile: boolean;
+  isPaidPlayer: boolean;
+  pricePerMatch: number;
+  image: number;
+  willJoinAnyOwner: boolean;
+}
+
 
 export interface PlayerExistsSchema {
   playerId?: number;
