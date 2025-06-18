@@ -12,11 +12,17 @@ import { RegistrationController } from '../controllers/registration.controller';
 import { CheckPermission } from '../middleware/permissions.middleware';
 import { PlayerRole, ROLES } from '../constants/roles.constants';
 import { RoleController } from '../controllers/role.controller';
+import path from 'path';
 
 const router = Router();
 
 // Public routes
-router.use('/uploads', express.static('uploads'));
+router.use('/uploads', express.static(path.join(path.resolve(), 'public', 'uploads'), {
+  maxAge: '1d',
+  setHeaders: (res) => {
+    res.set('X-Static-Serve', 'true');
+  }
+}));
 router.post('/upload', validate(fileValidation.uploadFile), FileController.uploadImage);
 
 // Registration
@@ -32,14 +38,20 @@ router.post('/login', validate(authValidation.loginSchema), AuthController.login
 // Protected routes under /auth
 router.use('/auth', authMiddleware);
 
+// Validate JWT Token
+router.get('/auth/validate', AuthController.isJWTTokenValid);
+
 // Players API
 router.get('/auth/players', PlayerController.getPlayers);
 router.get('/auth/players/inactive', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.getInactivePlayers);
 router.post('/auth/players/add', validate(registrationValidation.addProfileSchema),  CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), RegistrationController.addPlayers);
 router.put('/auth/players/:playerId/update', validate(roleValidation.playerIdSchema, 'params'), validate(registrationValidation.updateProfileByRoleSchema), RegistrationController.updatePlayersByRole);
-router.delete('/auth/players/:playerId/delete', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdSchema, 'params'), RegistrationController.deletePlayers);
+router.delete('/auth/players/:playerId/delete', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdSchema, 'params'), RegistrationController.deletePlayer);
+router.delete('/auth/players/deactivate', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.deactivatePlayers);
+router.delete('/auth/players/nonplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToNonPlayers);
+router.delete('/auth/players/toplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToPlayers);
 router.post('/auth/players/import', validate(fileValidation.AddPlayersFile), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), RegistrationController.AddMultiplePlayers);
-router.post('/auth/players/export', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.exportPlayers);
+router.post('/auth/players/export', validate(roleValidation.playerIdsOptionalSchema), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.exportPlayers);
 
 
 // Create/Remove Admin
@@ -47,6 +59,6 @@ router.put('/auth/players/:playerId/role/admin', validate(roleValidation.playerI
 router.delete('/auth/players/:playerId/role/admin/delete', validate(roleValidation.playerIdSchema, 'params'), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), RoleController.removeAdmin);
 
 // Approved Player
-router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema,), CheckPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN] as PlayerRole[]), RoleController.approvePlayers);
+router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema), CheckPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN] as PlayerRole[]), RoleController.approvePlayers);
 
 export default router;

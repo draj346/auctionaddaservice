@@ -94,4 +94,24 @@ export class RoleService {
       (accessRole !== userRole || playerId * 1 === accessPlayerId * 1)
     );
   }
+
+  static async hasSameLevelAccess(
+    userRole: PlayerRole,
+    accessPlayerId: number
+  ): Promise<boolean> {
+    const accessRole = (await this.getUserRole(accessPlayerId)) as PlayerRole;
+    if (accessRole === userRole) {
+      return true;
+    }
+    return !this.hasRoleAccess(userRole, accessRole);
+  }
+
+  static async hasRoleAccessOnly(
+    userRole: PlayerRole,
+    accessPlayerId: number
+  ): Promise<boolean> {
+    const accessRole = (await this.getUserRole(accessPlayerId)) as PlayerRole;
+    return this.hasRoleAccess(userRole, accessRole);
+  }
+
 }

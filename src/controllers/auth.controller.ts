@@ -15,6 +15,7 @@ import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
 import { ErrorMessage } from "../constants/constants";
 import { RoleService } from "../services/role.service";
+import { ROLES } from "../constants/roles.constants";
 
 const otpService = new OTPService();
 const emailService = new EmailService();
@@ -169,10 +170,10 @@ export class AuthController {
         expiresIn: "1d",
       });
 
-      // Need to modify while working on frontend
       const responsePayload = {
         token,
-        role,
+        role: role === ROLES.OWNER ? 'R': role[0],
+        image: player.image || ''
       };
 
       ApiResponse.success(res, responsePayload, 200, "Login successful");
@@ -186,4 +187,8 @@ export class AuthController {
       ApiResponse.error(res, errorMessage, 500);
     }
   };
+
+  static isJWTTokenValid = async (req: Request, res: Response) => {
+    ApiResponse.success(res, {}, 200, "User is Valid");
+  }
 }

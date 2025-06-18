@@ -6,20 +6,20 @@ import { RowDataPacket } from "mysql2";
 import { RoleQueries } from "../queries/role.queries";
 
 export class PlayerService {
-  async getPlayers(req: Request, isActive: boolean = true): Promise<Player[]> {
+  async getPlayers(req: Request, userId: number, isActive: boolean = true): Promise<Player[]> {
     const [result] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.getPlayers(req.role, isActive),
+      PlayerQueries.getPlayers(req.role, isActive, userId),
       [req.userId]
     );
 
     return result.length > 0 ? (result as Player[]) : [];
   }
 
-  async getPlayerForExport(): Promise<Player[]> {
+  async getPlayerForExport(playerIds: number[]): Promise<Player[]> {
+    const query = PlayerQueries.getPlayerForExport(playerIds);
     const [result] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.getPlayerForExport(),
+      query
     );
-
     return result.length > 0 ? (result as Player[]) : [];
   }
 
@@ -31,5 +31,4 @@ export class PlayerService {
 
     return result.length > 0 ? (result as Player[]) : [];
   }
-
 }

@@ -2,13 +2,15 @@ import { Request, Response } from "express";
 import { PlayerService } from "../services/player.service";
 import { ApiResponse } from "../utils/apiResponse";
 import * as XLSX from "xlsx";
+import { PlayerIdsSchema } from "../types/player.types";
+import { RoleService } from "../services/role.service";
 
 const playerService = new PlayerService();
 
 export class PlayerController {
   static getPlayers = async (req: Request, res: Response) => {
     try {
-      const players = await playerService.getPlayers(req);
+      const players = await playerService.getPlayers(req, req.userId);
       ApiResponse.success(res, players, 200, "Players retrieved successfully");
     } catch (error) {
       console.log(error);
@@ -34,7 +36,7 @@ export class PlayerController {
 
   static getInactivePlayers = async (req: Request, res: Response) => {
     try {
-      const players = await playerService.getPlayers(req, false);
+      const players = await playerService.getPlayers(req, req.userId, false);
       ApiResponse.success(res, players, 200, "Players retrieved successfully");
     } catch (error) {
       console.log(error);
@@ -42,53 +44,87 @@ export class PlayerController {
     }
   };
 
-  static exportPlayers = async (req: Request, res: Response): Promise<void> => {
-    try {
-      const players = await playerService.getPlayerForExport();
-
-      if (players.length === 0) {
-        return ApiResponse.error(
-          res,
-          "No player data available for export",
-          404
-        );
-      }
-
-      // Extract all unique keys from the first player (assuming consistent structure)
-      const allKeys = Object.keys(players[0]);
-
-      // Create headers by formatting keys
-      const headers = allKeys.map((key) =>
-        key.replace(/_/g, " ").toUpperCase()
+  static exportPlayers = async (
+    req: Request,
+    res: Response
+  ): Promise<void> => {
+    const sendExcel = (
+      data: string | any[][],
+      status: number,
+      filename: string,
+      sheetName: string = "Status"
+    ) => {
+      const ws = XLSX.utils.aoa_to_sheet(
+        typeof data === "string" ? [[data]] : data
       );
-
-      // Build data rows ensuring consistent column order
-      const rows = players.map((player) =>
-        allKeys.map((key) => player[key as keyof typeof player] ?? null)
-      );
-
-      // Create worksheet with headers and data
-      const ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
-
-      // Create workbook and generate buffer
       const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, "Player Data");
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
       const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
 
-      // Set response headers for Excel download
-      res.setHeader(
-        "Content-Disposition",
-        "attachment; filename=players_export.xlsx"
-      );
+      res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
       res.setHeader(
         "Content-Type",
         "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
       );
-      res.send(buffer)
-      return;
+      res.status(status).send(buffer);
+    };
+    try {
+      const data: PlayerIdsSchema = req.body;
+      let allowedPlayerIds:number[] = []
+
+      if (data.playerIds.length > 0) {
+        const accessChecks = data.playerIds.map(async (playerId) => {
+          const hasRoleLevelAccess = await RoleService.hasRoleAccessOnly(
+            req.role,
+            playerId
+          );
+          return { playerId, allowed: hasRoleLevelAccess };
+        });
+
+        const accessResults = await Promise.all(accessChecks);
+
+        allowedPlayerIds = accessResults
+          .filter((result) => result.allowed)
+          .map((result) => result.playerId);
+
+        if (allowedPlayerIds.length === 0) {
+          return sendExcel("Access Denied", 403, "access_denied.xlsx", "Error");
+        }
+      }
+
+      const players = await playerService.getPlayerForExport(allowedPlayerIds);
+
+      if (players.length === 0) {
+        return sendExcel(
+          "No player data available for export",
+          200,
+          "no_players_found.xlsx"
+        );
+      }
+
+      const allKeys = Object.keys(players[0]);
+
+      const headers = allKeys.map((key) =>
+        key.replace(/_/g, " ").toUpperCase()
+      );
+      const rows = players.map((player) =>
+        allKeys.map((key) => player[key as keyof typeof player] ?? null)
+      );
+
+      return sendExcel(
+        [headers, ...rows],
+        200,
+        `players_export_${Date.now()}.xlsx`,
+        "Player Data"
+      );
     } catch (error) {
       console.error("Export error:", error);
-      return ApiResponse.error(res, "Failed to generate export file", 500);
+      sendExcel(
+        "Internal server error. Please try again later.",
+        500,
+        "server_error.xlsx",
+        "Error"
+      );
     }
   };
 }

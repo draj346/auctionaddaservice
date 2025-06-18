@@ -68,6 +68,10 @@ export interface PlayerIdSchema {
    playerId: number;
 }
 
+export interface PlayerIdsSchema {
+   playerIds: number[];
+}
+
 export interface AddProfileExcelSchema {
   'Full Name': string; 
   'Mobile': string;

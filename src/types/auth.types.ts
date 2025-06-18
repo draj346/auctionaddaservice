@@ -24,4 +24,5 @@ export interface LoginRequest {
 export interface PasswordSchema {
   playerId: number;
   password: string;
+  image?: string;
 }

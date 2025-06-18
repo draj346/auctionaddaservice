@@ -12,7 +12,7 @@ const corsOptions = {
   origin: [
     'http://localhost:3001',
   ],
-  methods: ['GET', 'POST'],
+  methods: ['GET', 'POST', 'DELETE', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true, // Allow cookies/auth headers
 };

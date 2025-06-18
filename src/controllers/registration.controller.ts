@@ -4,6 +4,7 @@ import {
   AddProfileExcelSchema,
   InitialRegistrationData,
   UpdateProfileSchemaData,
+  PlayerIdsSchema,
 } from "../types/player.types";
 import { ApiResponse } from "../utils/apiResponse";
 import { RegistrationService } from "../services/registration.service";
@@ -18,21 +19,12 @@ export class RegistrationController {
     try {
       const data: InitialRegistrationData = req.body;
       const playerInfo = await registrationService.initialRegistration(data);
-      if (playerInfo.playerId) {
-        ApiResponse.success(
-          res,
-          { ...playerInfo },
-          200,
-          "Registration initiated successfully"
-        );
-      } else {
-        ApiResponse.error(
-          res,
-          "Something went happen. Please try again.",
-          200,
-          playerInfo
-        );
-      }
+      ApiResponse.success(
+        res,
+        { ...playerInfo },
+        200,
+        playerInfo.playerId ? "Registration initiated successfully" : "Something went happen. Please try again."
+      );
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.");
@@ -52,7 +44,7 @@ export class RegistrationController {
           "Registration completed successfully"
         );
       } else {
-        ApiResponse.error(res, "Player not found or update failed", 401);
+        ApiResponse.error(res, "Player not found or update failed", 404);
       }
     } catch (error) {
       console.log(error);
@@ -95,7 +87,7 @@ export class RegistrationController {
         data.playerId
       );
       if (!hasAccess) {
-        return ApiResponse.error(res, "Access Denied", 401, {
+        return ApiResponse.error(res, "Access Denied", 403, {
           isAccessDenied: true,
         });
       }
@@ -104,7 +96,7 @@ export class RegistrationController {
       if (success) {
         ApiResponse.success(res, null, 200, "Profile updated successfully");
       } else {
-        ApiResponse.error(res, "Player not found or update failed", 401, {
+        ApiResponse.error(res, "Player not found or update failed", 404, {
           isError: true,
         });
       }
@@ -116,7 +108,7 @@ export class RegistrationController {
     }
   };
 
-  static deletePlayers = async (req: Request, res: Response) => {
+  static deletePlayer = async (req: Request, res: Response) => {
     try {
       const playerId = parseInt(req.params.playerId);
 
@@ -126,7 +118,7 @@ export class RegistrationController {
         playerId
       );
       if (!hasAccess || req.userId * 1 === playerId) {
-        return ApiResponse.error(res, "Access Denied", 401, {
+        return ApiResponse.error(res, "Access Denied", 403, {
           isAccessDenied: true,
         });
       }
@@ -135,7 +127,7 @@ export class RegistrationController {
       if (success) {
         ApiResponse.success(res, null, 200, "Profile deleted successfully");
       } else {
-        ApiResponse.error(res, "Player not found or update failed", 401, {
+        ApiResponse.error(res, "Player not found or update failed", 404, {
           isError: true,
         });
       }
@@ -144,6 +136,72 @@ export class RegistrationController {
       ApiResponse.error(res, "Something went happen. Please try again.", 500, {
         isError: true,
       });
+    }
+  };
+
+  static deactivatePlayers = async (req: Request, res: Response) => {
+    try {
+      const data: PlayerIdsSchema = req.body;
+
+      const accessChecks = data.playerIds.map(async (playerId) => {
+        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+          req.role,
+          playerId
+        );
+        return { playerId, allowed: !hasSameLevelAccess };
+      });
+
+      const accessResults = await Promise.all(accessChecks);
+
+      const allowedPlayerIds = accessResults
+        .filter((result) => result.allowed)
+        .map((result) => result.playerId);
+
+      if (allowedPlayerIds.length === 0) {
+        return ApiResponse.error(res, "Access Denied", 403, {
+          isAccessDenied: true,
+        });
+      }
+
+      const success = await registrationService.deactivatePlayers(
+        allowedPlayerIds
+      );
+
+      if (!success) {
+        return ApiResponse.error(
+          res,
+          "Players not found or update failed",
+          404,
+          { isUpdateFailed: true }
+        );
+      }
+
+      if (data.playerIds.length !== allowedPlayerIds.length) {
+        const skippedPlayerIds = data.playerIds.filter(
+          (id) => !allowedPlayerIds.includes(id)
+        );
+        return ApiResponse.success(
+          res,
+          { skippedPlayerIds },
+          200,
+          "Some profiles deactivated successfully"
+        );
+      }
+
+      return ApiResponse.success(
+        res,
+        {skippedPlayerIds: []},
+        200,
+        "Profiles deactivated successfully"
+      );
+    } catch (error) {
+      console.error("Deactivation error:", error);
+      return ApiResponse.error(
+        res,
+        "Something went wrong. Please try again.",
+        500,
+        { isError: true }
+      );
     }
   };
 
@@ -246,4 +304,135 @@ export class RegistrationController {
     }
   };
 
+  static updateToNonPlayers = async (req: Request, res: Response) => {
+    try {
+      const data: PlayerIdsSchema = req.body;
+
+      const accessChecks = data.playerIds.map(async (playerId) => {
+        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+          req.role,
+          playerId
+        );
+        return { playerId, allowed: !hasSameLevelAccess };
+      });
+
+      const accessResults = await Promise.all(accessChecks);
+
+      const allowedPlayerIds = accessResults
+        .filter((result) => result.allowed)
+        .map((result) => result.playerId);
+
+      if (allowedPlayerIds.length === 0) {
+        return ApiResponse.error(res, "Access Denied", 403, {
+          isAccessDenied: true,
+        });
+      }
+
+      const success = await registrationService.updateToNonPlayers(
+        allowedPlayerIds
+      );
+
+      if (!success) {
+        return ApiResponse.error(
+          res,
+          "Players not found or update failed",
+          404,
+          { isUpdateFailed: true }
+        );
+      }
+
+      if (data.playerIds.length !== allowedPlayerIds.length) {
+        const skippedPlayerIds = data.playerIds.filter(
+          (id) => !allowedPlayerIds.includes(id)
+        );
+        return ApiResponse.success(
+          res,
+          { skippedPlayerIds },
+          200,
+          "Some profiles updated to Non Players successfully"
+        );
+      }
+
+      return ApiResponse.success(
+        res,
+        {skippedPlayerIds: []},
+        200,
+        "Profiles updated to Non Players successfully"
+      );
+    } catch (error) {
+      console.error("error:", error);
+      return ApiResponse.error(
+        res,
+        "Something went wrong. Please try again.",
+        500,
+        { isError: true }
+      );
+    }
+  };
+
+  static updateToPlayers = async (req: Request, res: Response) => {
+    try {
+      const data: PlayerIdsSchema = req.body;
+
+      const accessChecks = data.playerIds.map(async (playerId) => {
+        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+          req.role,
+          playerId
+        );
+        return { playerId, allowed: !hasSameLevelAccess };
+      });
+
+      const accessResults = await Promise.all(accessChecks);
+
+      const allowedPlayerIds = accessResults
+        .filter((result) => result.allowed)
+        .map((result) => result.playerId);
+
+      if (allowedPlayerIds.length === 0) {
+        return ApiResponse.error(res, "Access Denied", 403, {
+          isAccessDenied: true,
+        });
+      }
+
+      const success = await registrationService.updateToPlayers(
+        allowedPlayerIds
+      );
+
+      if (!success) {
+        return ApiResponse.error(
+          res,
+          "Players not found or update failed",
+          404,
+         { isUpdateFailed: true }
+        );
+      }
+
+      if (data.playerIds.length !== allowedPlayerIds.length) {
+        const skippedPlayerIds = data.playerIds.filter(
+          (id) => !allowedPlayerIds.includes(id)
+        );
+        return ApiResponse.success(
+          res,
+          { skippedPlayerIds },
+          200,
+          "Some profiles updated to Players successfully"
+        );
+      }
+
+      return ApiResponse.success(
+        res,
+        {skippedPlayerIds: []},
+        200,
+        "Profiles updated to Players successfully"
+      );
+    } catch (error) {
+      console.error("error:", error);
+      return ApiResponse.error(
+        res,
+        "Something went wrong. Please try again.",
+        500,
+        { isError: true }
+      );
+    }
+  };
 }

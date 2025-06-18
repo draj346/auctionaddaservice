@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { RoleService } from "../services/role.service";
 import { ErrorResponsePayload } from "../types";
+import { PlayerIdsSchema } from "../types/player.types";
 
 const roleService = new RoleService();
 
@@ -40,24 +41,55 @@ export class RoleController {
     }
   };
 
-   static approvePlayers = async (req: Request, res: Response) => {
+  static approvePlayers = async (req: Request, res: Response) => {
     try {
-      const {playerIds} = req.body;
+      const data: PlayerIdsSchema = req.body;
 
-      if (playerIds.includes(req.userId)) {
-        return ApiResponse.error(res, "You can't approve yourself", 400, { isAccessDenied: true });
+      const accessChecks = data.playerIds.map(async (playerId) => {
+        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+          req.role,
+          playerId
+        );
+        return { playerId, allowed: !hasSameLevelAccess };
+      });
+
+      const accessResults = await Promise.all(accessChecks);
+
+      const allowedPlayerIds = accessResults
+        .filter((result) => result.allowed)
+        .map((result) => result.playerId);
+
+      if (allowedPlayerIds.length === 0) {
+        return ApiResponse.error(res, "Access Denied", 403, {
+          isAccessDenied: true,
+        });
       }
 
-      await roleService.approvePlayers(playerIds);
-      ApiResponse.success(res, {}, 200, "Players approved successfully");
+      const success = await roleService.approvePlayers(allowedPlayerIds);
+
+      if (!success) {
+        return ApiResponse.error(res, "Update failed", 200, { 
+          isUpdateFailed: true 
+        });
+      }
+
+      if (data.playerIds.length !== allowedPlayerIds.length) {
+        const skippedPlayerIds = data.playerIds.filter(
+          (id) => !allowedPlayerIds.includes(id)
+        );
+        return ApiResponse.success(
+          res,
+          { skippedPlayerIds },
+          200,
+          "Some profiles approved successfully"
+        );
+      }
+      ApiResponse.success(res, {skippedPlayerIds: []}, 200, "Players approved successfully");
     } catch (error) {
       console.log(error);
-      ApiResponse.error(
-        res,
-        "Something went happen. Please try again.",
-        500,
-        {isError: true}
-      );
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+        isError: true,
+      });
     }
   };
 }

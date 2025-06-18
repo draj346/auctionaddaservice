@@ -163,6 +163,33 @@ export class RegistrationService {
     return result.affectedRows > 0;
   }
 
+  async deactivatePlayers(playerIds: number[]): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(
+      RegistrationQueries.deactivatePlayers,
+      [playerIds.join()]
+    );
+
+    return result.affectedRows > 0;
+  }
+
+  async updateToNonPlayers(playerIds: number[]): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(
+      RegistrationQueries.updateToNonPlayers,
+      [playerIds.join()]
+    );
+
+    return result.affectedRows > 0;
+  }
+
+  async updateToPlayers(playerIds: number[]): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(
+      RegistrationQueries.updateToPlayers,
+      [playerIds.join()]
+    );
+
+    return result.affectedRows > 0;
+  }
+
    async createProfileForExcel( data: AddProfileExcelSchema): Promise<PlayerExistsSchema> {
     if (data['Email']) {
       const [fullMatches] = await pool.execute<RowDataPacket[]>(

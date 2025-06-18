@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
 import { FileService } from "../services/file.service";
-import { FILE_UPLOAD_LOCATION } from "../config/env";
+import { FILE_UPLOAD_FOLDER, FILE_UPLOAD_LOCATION } from "../config/env";
 import { upload } from "../utils/multerConfig";
 
 const fileService = new FileService();
@@ -20,7 +20,7 @@ export class FileController {
         }
         const { userId, fileId } = req.body;
         const imagePath = req.file.path;
-        const url = `${FILE_UPLOAD_LOCATION}${req.file.filename}`;
+        const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
 
         const playerId = req.userId || userId;
         const isValidUser = await AuthService.isValidUser(playerId);
