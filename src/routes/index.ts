@@ -5,6 +5,7 @@ import * as registrationValidation from '../validations/registration.validations
 import * as authValidation from '../validations/auth.validations';
 import * as fileValidation from '../validations/file.validations';
 import * as roleValidation from '../validations/role.validations';
+import * as playerValidation from '../validations/player.validations';
 import { validate } from '../middleware/validation.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { FileController } from '../controllers/file.controller';
@@ -42,8 +43,8 @@ router.use('/auth', authMiddleware);
 router.get('/auth/validate', AuthController.isJWTTokenValid);
 
 // Players API
-router.get('/auth/players', PlayerController.getPlayers);
-router.get('/auth/players/inactive', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.getInactivePlayers);
+router.get('/auth/players',validate(playerValidation.updateProfileSchema, "query"), PlayerController.getPlayers);
+router.get('/auth/players/inactive',validate(playerValidation.updateProfileSchema, "query"), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.getInactivePlayers);
 router.post('/auth/players/add', validate(registrationValidation.addProfileSchema),  CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), RegistrationController.addPlayers);
 router.put('/auth/players/:playerId/update', validate(roleValidation.playerIdSchema, 'params'), validate(registrationValidation.updateProfileByRoleSchema), RegistrationController.updatePlayersByRole);
 router.delete('/auth/players/:playerId/delete', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdSchema, 'params'), RegistrationController.deletePlayer);

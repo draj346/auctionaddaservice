@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { PlayerService } from "../services/player.service";
 import { ApiResponse } from "../utils/apiResponse";
 import * as XLSX from "xlsx";
-import { PlayerIdsSchema } from "../types/player.types";
+import { PlayerIdsSchema, playerPaginationSchema } from "../types/player.types";
 import { RoleService } from "../services/role.service";
 
 const playerService = new PlayerService();
@@ -10,8 +10,23 @@ const playerService = new PlayerService();
 export class PlayerController {
   static getPlayers = async (req: Request, res: Response) => {
     try {
-      const players = await playerService.getPlayers(req, req.userId);
-      ApiResponse.success(res, players, 200, "Players retrieved successfully");
+      const data = req.query as unknown as playerPaginationSchema;
+      const page = data.page || 1;
+      const search = data.search || "";
+      const owner = data.owner || "all";
+      const approved = data.approved || "all";
+      const limit = 100;
+
+      const { players, total, hasMore } = await playerService.getPlayers(
+        req.role,
+        req.userId,
+        page,
+        limit,
+        search,
+        owner,
+        approved
+      );
+      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.");
@@ -36,18 +51,31 @@ export class PlayerController {
 
   static getInactivePlayers = async (req: Request, res: Response) => {
     try {
-      const players = await playerService.getPlayers(req, req.userId, false);
-      ApiResponse.success(res, players, 200, "Players retrieved successfully");
+      const data = req.query as unknown as playerPaginationSchema;
+      const page = data.page || 1;
+      const search = data.search || "";
+      const owner = data.owner || "all";
+      const approved = data.approved || "all";
+      const limit = 100;
+
+      const { players, total, hasMore } = await playerService.getPlayers(
+        req.role,
+        req.userId,
+        page,
+        limit,
+        search,
+        owner,
+        approved,
+        false
+      );
+      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
-  static exportPlayers = async (
-    req: Request,
-    res: Response
-  ): Promise<void> => {
+  static exportPlayers = async (req: Request, res: Response): Promise<void> => {
     const sendExcel = (
       data: string | any[][],
       status: number,
@@ -70,7 +98,7 @@ export class PlayerController {
     };
     try {
       const data: PlayerIdsSchema = req.body;
-      let allowedPlayerIds:number[] = []
+      let allowedPlayerIds: number[] = [];
 
       if (data.playerIds.length > 0) {
         const accessChecks = data.playerIds.map(async (playerId) => {

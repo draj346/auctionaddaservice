@@ -84,3 +84,10 @@ export interface AddProfileExcelSchema {
   'Price Per Match': number;
   'Will Join Any Owner': boolean;
 }
+
+export interface playerPaginationSchema {
+  page: number;
+  search: string;
+  owner: string;
+  approved: string;
+}
