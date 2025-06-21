@@ -165,8 +165,7 @@ export class RegistrationService {
 
   async deactivatePlayers(playerIds: number[]): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
-      RegistrationQueries.deactivatePlayers,
-      [playerIds.join()]
+      RegistrationQueries.deactivatePlayers(playerIds.join())
     );
 
     return result.affectedRows > 0;
@@ -174,8 +173,7 @@ export class RegistrationService {
 
   async updateToNonPlayers(playerIds: number[]): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
-      RegistrationQueries.updateToNonPlayers,
-      [playerIds.join()]
+      RegistrationQueries.updateToNonPlayers(playerIds.join()),
     );
 
     return result.affectedRows > 0;
@@ -183,8 +181,7 @@ export class RegistrationService {
 
   async updateToPlayers(playerIds: number[]): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
-      RegistrationQueries.updateToPlayers,
-      [playerIds.join()]
+      RegistrationQueries.updateToPlayers(playerIds.join()),
     );
 
     return result.affectedRows > 0;

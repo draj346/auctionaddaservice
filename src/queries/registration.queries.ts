@@ -19,7 +19,13 @@ export const RegistrationQueries = {
     createPlayer: `INSERT INTO players (name, mobile, email, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
                     isPaidPlayer, pricePerMatch, willJoinAnyOwner, image, isSubmitted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     deletePlayer: `UPDATE players SET isActive = 0 WHERE playerId = ?`,
-    deactivatePlayers: `UPDATE players SET isActive = 0 WHERE playerId IN (?)`,
-    updateToNonPlayers: `UPDATE players SET isNonPlayer = 1 WHERE playerId IN (?)`,
-    updateToPlayers: `UPDATE players SET isNonPlayer = 0 WHERE playerId IN (?)`,
+    deactivatePlayers(ids: string) {
+      return `UPDATE players SET isActive = 0 WHERE playerId IN (${ids})`
+    },
+    updateToNonPlayers(ids: string) {
+      return `UPDATE players SET isNonPlayer = 1 WHERE playerId IN (${ids})`
+    },
+    updateToPlayers(ids: string) {
+      return `UPDATE players SET isNonPlayer = 0 WHERE playerId IN (${ids})`
+    },
 };
