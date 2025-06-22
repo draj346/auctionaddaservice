@@ -15,6 +15,7 @@ export class PlayerController {
       const search = data.search || "";
       const owner = data.owner || "all";
       const approved = data.approved || "all";
+      const sort = data.sort || "";
       const limit = 100;
 
       const { players, total, hasMore } = await playerService.getPlayers(
@@ -24,7 +25,8 @@ export class PlayerController {
         limit,
         search,
         owner,
-        approved
+        approved,
+        sort
       );
       ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     } catch (error) {
@@ -57,6 +59,7 @@ export class PlayerController {
       const owner = data.owner || "all";
       const approved = data.approved || "all";
       const limit = 100;
+      const sort = data.sort || "";
 
       const { players, total, hasMore } = await playerService.getPlayers(
         req.role,
@@ -66,6 +69,7 @@ export class PlayerController {
         search,
         owner,
         approved,
+        sort,
         false
       );
       ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
