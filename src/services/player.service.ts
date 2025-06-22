@@ -14,7 +14,8 @@ export class PlayerService {
     search: string = "",
     owner: string = "all",
     approved: string = "all",
-    isActive: boolean = true
+    sort: string,
+    isActive: boolean = true,
   ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
 
@@ -28,7 +29,8 @@ export class PlayerService {
           owner,
           approved,
           offset,
-          limit
+          limit,
+          sort
         )
       ),
       pool.execute<RowDataPacket[]>(

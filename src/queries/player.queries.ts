@@ -8,7 +8,8 @@ const queries = {
     userId: number,
     where: string,
     offset: number,
-    limit: number
+    limit: number,
+    orderBy: string
   ) => {
     return `SELECT 
         p.playerId, p.name, p.mobile, p.email
@@ -33,9 +34,7 @@ const queries = {
           WHERE pr.playerId = p.playerId 
             AND r.name IN ('SUPER_ADMIN', 'ADMIN')
         ) ${where}
-      ORDER BY 
-        CASE WHEN p.playerId = ${userId} THEN 0 ELSE 1 END,
-        p.playerId ASC
+      ORDER BY ${orderBy}
       LIMIT ${limit}
       OFFSET ${offset}`;
   },
@@ -46,7 +45,8 @@ const queries = {
     userId: number,
     where: string,
     offset: number,
-    limit: number
+    limit: number,
+    orderBy: string
   ) => {
     return `
       SELECT p.playerId, p.name, p.mobile, p.email, p.pricePerMatch, p.willJoinAnyOwner,
@@ -64,9 +64,7 @@ const queries = {
                   AND r.name = 'SUPER_ADMIN'
               )`
         } ${where}
-      ORDER BY 
-        CASE WHEN p.playerId = ${userId} THEN 0 ELSE 1 END,
-        p.playerId ASC
+      ORDER BY ${orderBy}
       LIMIT ${limit}
       OFFSET ${offset}`;
   },
@@ -222,6 +220,31 @@ export class PlayerQueries {
     return where;
   }
 
+  private static buildOrderByClause(sort: string, userId: number): string {
+    const defaultSort = `CASE WHEN p.playerId = ${userId} THEN 0 ELSE 1 END, p.playerId ASC`;
+    
+    if (!sort) return defaultSort;
+
+    const sortRules = sort.split(',');
+    const orderBy = sortRules
+      .map(rule => {
+        const [field, direction] = rule.split(':');
+        const safeDirection = direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
+        
+        switch (field) {
+          case 'name': return `p.name ${safeDirection}`;
+          case 'email': return `p.email ${safeDirection}`;
+          case 'mobile': return `p.mobile ${safeDirection}`;
+          case 'pricePerMatch': return `p.pricePerMatch ${safeDirection}`;
+          default: return null;
+        }
+      })
+      .filter(Boolean)
+      .join(', ');
+
+    return orderBy || defaultSort;
+  }
+
   public static getPlayers = (
     role: PlayerRole,
     isActive: boolean,
@@ -230,17 +253,17 @@ export class PlayerQueries {
     owner: string,
     approved: string,
     offset: number,
-    limit: number
+    limit: number,
+    sort: string
   ) => {
     const where = this.buildWhereClause(search, owner, approved);
+    const orderBy = this.buildOrderByClause(sort || '', userId);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      const query =  queries.getAdminPlayers(role, isActive, userId, where, offset, limit);
-      console.log(query);
+      const query =  queries.getAdminPlayers(role, isActive, userId, where, offset, limit, orderBy);
       return query;
     }
-    const query =  queries.getPlayers(role, userId, where, offset, limit);
-    console.log(query);
+    const query =  queries.getPlayers(role, userId, where, offset, limit, orderBy);
     return query;
   };
 

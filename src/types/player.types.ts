@@ -90,4 +90,5 @@ export interface playerPaginationSchema {
   search: string;
   owner: string;
   approved: string;
+  sort: string;
 }

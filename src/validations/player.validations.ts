@@ -6,4 +6,5 @@ export const updateProfileSchema = Joi.object<playerPaginationSchema>({
   search: Joi.string().trim().allow('').alphanum().required(),
   owner: Joi.string().valid("all", "Yes", "No").required(),
   approved: Joi.string().valid("all", "Yes", "No").required(),
+  sort: Joi.string().trim().allow('').required()
 });
