@@ -37,17 +37,27 @@ export class PlayerController {
 
   static getPlayersById = async (req: Request, res: Response) => {
     try {
-      const { playerId } = req.body;
+      const playerId = parseInt(req.params.playerId);
 
       if (!playerId) {
-        return ApiResponse.error(res, "Required Player Id", 400);
+        return ApiResponse.error(res, "Player not found or update failed", 404, {
+          isNotFound: true,
+        });
       }
 
-      const players = await playerService.getPlayerById(req, playerId);
-      ApiResponse.success(res, players, 200, "Players retrieved successfully");
+      const player = await playerService.getPlayerById(req.role, playerId, true, req.userId);
+      if (player) {
+        ApiResponse.success(res, player, 200, "Players retrieved successfully");
+      } else {
+        return ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
+          isAccessDenied: true,
+        });
+      }
     } catch (error) {
       console.log(error);
-      ApiResponse.error(res, "Something went happen. Please try again.");
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+        isError: true,
+      });
     }
   };
 

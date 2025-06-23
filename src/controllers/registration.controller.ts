@@ -215,11 +215,11 @@ export class RegistrationController {
       });
 
       if (!req.file) {
-        return ApiResponse.error(res, "No file uploaded", 400);
+        return ApiResponse.error(res, "No file uploaded", 400, {isUpdateFailed: true});
       }
 
       if (!req.file.buffer || req.file.buffer.length === 0) {
-        return ApiResponse.error(res, "Empty file buffer", 400);
+        return ApiResponse.error(res, "Empty file buffer", 400, {isNotFound: true});
       }
 
       const workbook = XLSX.read(req.file.buffer, {
@@ -232,7 +232,7 @@ export class RegistrationController {
         !workbook.SheetNames.length ||
         !workbook.Sheets[workbook.SheetNames[0]]
       ) {
-        return ApiResponse.error(res, "No worksheets found in Excel file", 400);
+        return ApiResponse.error(res, "No worksheets found in Excel file", 400, {isNotFound: true});
       }
 
       const sheetName = workbook.SheetNames[0];
@@ -300,7 +300,7 @@ export class RegistrationController {
       res.send(updatedBuffer);
     } catch (error) {
       console.log(error);
-      ApiResponse.error(res, "Uploading failed. Please try again.");
+      ApiResponse.error(res, "Uploading failed. Please try again.", 500,  { isError: true });
     }
   };
 

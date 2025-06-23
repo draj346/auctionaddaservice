@@ -1,5 +1,4 @@
 import pool from "../config/db.config";
-import { Request } from "express";
 import { PlayerQueries } from "../queries/player.queries";
 import { Player } from "../types/player.types";
 import { RowDataPacket } from "mysql2";
@@ -61,12 +60,12 @@ export class PlayerService {
     return result.length > 0 ? (result as Player[]) : [];
   }
 
-  async getPlayerById(req: Request, playerId: number): Promise<Player[]> {
+  async getPlayerById(role: PlayerRole, playerId: number,  isActive: boolean, userId: number): Promise<Player | null> {
     const [result] = await pool.execute<RowDataPacket[]>(
-      PlayerQueries.getPlayerById(req.role, playerId),
-      [req.userId]
+      PlayerQueries.getPlayerById(role, playerId, isActive, userId),
+      [userId]
     );
 
-    return result.length > 0 ? (result as Player[]) : [];
+    return result.length > 0 ? (result[0] as Player) : null;
   }
 }

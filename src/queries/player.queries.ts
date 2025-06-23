@@ -42,7 +42,6 @@ const queries = {
   getAdminPlayers: (
     role: PlayerRole,
     isActive: boolean,
-    userId: number,
     where: string,
     offset: number,
     limit: number,
@@ -112,18 +111,28 @@ const queries = {
       `;
   },
 
-  getPlayerDetails: (role: PlayerRole, playerId: number) => {
+  getPlayerDetails: (role: PlayerRole, playerId: number, userId: number) => {
     return `
       SELECT 
         p.playerId, p.name, p.mobile, p.email, 
         p.jerseyNumber, p.tShirtSize, p.lowerSize, 
-        p.hasCricheroesProfile, url
-        ${RoleHelper.isOrganiserAndOwner(role) ? ", p.pricePerMatch" : ""}
-        ${RoleHelper.isOrganiser(role) ? ", p.willJoinAnyOwner" : ""}
+        p.hasCricheroesProfile, url as image
+        ${playerId === userId 
+            ? ", p.isPaidPlayer, p.pricePerMatch, p.willJoinAnyOwner" 
+            : (RoleHelper.isOrganiserAndOwner(role) 
+                ? ", p.isPaidPlayer, p.pricePerMatch" 
+                : "") +
+              (RoleHelper.isOrganiser(role) && playerId !== userId 
+                ? ", p.willJoinAnyOwner" 
+                : "")
+        }
       FROM players p 
       LEFT JOIN files f ON p.image = f.fileId
       WHERE p.playerId = ${playerId}
-        AND p.isNonPlayer = 0 
+        AND (
+          p.isNonPlayer = 0 
+          OR p.playerId = ${playerId} 
+        )
         AND p.isApproved = 1 
         AND p.isActive = 1
         AND NOT EXISTS (
@@ -135,16 +144,17 @@ const queries = {
         )`;
   },
 
-  getAdminPlayerDetails: (role: PlayerRole, playerId: number) => {
+  getAdminPlayerDetails: (role: PlayerRole, playerId: number,  isActive: boolean) => {
     return `
       SELECT 
         p.playerId, p.name, p.mobile, p.email, p.jerseyNumber, 
-        p.tShirtSize, p.lowerSize, p.hasCricheroesProfile,
+        p.tShirtSize, p.lowerSize, p.hasCricheroesProfile, p.isPaidPlayer,
         p.pricePerMatch, p.willJoinAnyOwner, p.isApproved, 
-        p.isNonPlayer, url
+        p.isNonPlayer, url as image
       FROM players p 
       LEFT JOIN files f ON p.image = f.fileId
       WHERE p.playerId = ${playerId}
+        AND p.isActive = ${isActive ? 1 : 0}
         ${
           RoleHelper.isSuperAdmin(role)
             ? ""
@@ -260,7 +270,7 @@ export class PlayerQueries {
     const orderBy = this.buildOrderByClause(sort || '', userId);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      const query =  queries.getAdminPlayers(role, isActive, userId, where, offset, limit, orderBy);
+      const query =  queries.getAdminPlayers(role, isActive, where, offset, limit, orderBy);
       return query;
     }
     const query =  queries.getPlayers(role, userId, where, offset, limit, orderBy);
@@ -283,11 +293,11 @@ export class PlayerQueries {
     return queries.getCountPlayers(userId, where);
   };
 
-  public static getPlayerById = (role: PlayerRole, playerId: number) => {
+  public static getPlayerById = (role: PlayerRole, playerId: number, isActive: boolean, userId: number) => {
     if (RoleHelper.isAdminAndAbove(role)) {
-      return queries.getAdminPlayerDetails(role, playerId);
+      return queries.getAdminPlayerDetails(role, playerId, isActive);
     }
-    return queries.getPlayerDetails(role, playerId);
+    return queries.getPlayerDetails(role, playerId, userId);
   };
 
   public static approvePlayer = (playerIds: number[]) => {
