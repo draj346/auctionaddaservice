@@ -17,7 +17,7 @@ CREATE TABLE players (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT true,
   isNonPlayer BOOLEAN DEFAULT false,
-  password CHAR(60) NOT NULL,
+  password CHAR(60) NULL,
   UNIQUE KEY mobile_unique (mobile),
   UNIQUE KEY email_unique (email),
   INDEX idx_status_flags (isActive, isApproved, isNonPlayer),
