@@ -55,6 +55,8 @@ router.delete('/auth/players/toplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPE
 router.post('/auth/players/import', validate(fileValidation.AddPlayersFile), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), RegistrationController.AddMultiplePlayers);
 router.post('/auth/players/export', validate(roleValidation.playerIdsOptionalSchema), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.exportPlayers);
 
+// Upload User Image
+router.post('/auth/upload', validate(fileValidation.userUploadFile), FileController.userUploadImage);
 
 // Create/Remove Admin
 router.put('/auth/players/:playerId/role/admin', validate(roleValidation.playerIdSchema, 'params'), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), RoleController.createAdmin);

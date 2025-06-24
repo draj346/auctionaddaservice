@@ -7,6 +7,10 @@ export const uploadFile = Joi.object<FileData>({
   image: Joi.binary().required(),
 });
 
+export const userUploadFile = Joi.object<FileData>({
+  fileId: Joi.number().allow('', null).min(1).required(),
+  image: Joi.binary().required(),
+});
 
 export const AddPlayersFile = Joi.object<ExcelFileData>({
   file: Joi.binary().required(),

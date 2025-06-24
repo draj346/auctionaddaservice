@@ -116,7 +116,7 @@ const queries = {
       SELECT 
         p.playerId, p.name, p.mobile, p.email, 
         p.jerseyNumber, p.tShirtSize, p.lowerSize, 
-        p.hasCricheroesProfile, url as image
+        p.hasCricheroesProfile, url as image, f.fileId
         ${playerId === userId 
             ? ", p.isPaidPlayer, p.pricePerMatch, p.willJoinAnyOwner" 
             : (RoleHelper.isOrganiserAndOwner(role) 
@@ -150,7 +150,7 @@ const queries = {
         p.playerId, p.name, p.mobile, p.email, p.jerseyNumber, 
         p.tShirtSize, p.lowerSize, p.hasCricheroesProfile, p.isPaidPlayer,
         p.pricePerMatch, p.willJoinAnyOwner, p.isApproved, 
-        p.isNonPlayer, url as image
+        p.isNonPlayer, url as image, f.fileId
       FROM players p 
       LEFT JOIN files f ON p.image = f.fileId
       WHERE p.playerId = ${playerId}
