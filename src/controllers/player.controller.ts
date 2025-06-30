@@ -61,6 +61,42 @@ export class PlayerController {
     }
   };
 
+  static getPlayersByIdForEdit = async (req: Request, res: Response) => {
+    try {
+      const playerId = parseInt(req.params.playerId);
+
+      if (!playerId) {
+        return ApiResponse.error(res, "Player not found or update failed", 404, {
+          isNotFound: true,
+        });
+      }
+
+       const hasAccess = await RoleService.isSelfOrAdminOrAbove(
+          req.role,
+          req.userId,
+          playerId,
+          true
+        );
+
+        let player = null;
+        if (hasAccess) {
+          player = await playerService.getPlayerById(req.role, playerId, true, req.userId);
+        }
+      if (player) {
+        ApiResponse.success(res, player, 200, "Players retrieved successfully");
+      } else {
+        return ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
+          isAccessDenied: true,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+        isError: true,
+      });
+    }
+  };
+
   static exportPlayers = async (req: Request, res: Response): Promise<void> => {
     const sendExcel = (
       data: string | any[][],

@@ -133,18 +133,14 @@ const queries = {
         ON pimg.imageId = f.fileId
       WHERE 
         p.playerId = ${playerId} 
-      OR
-        (
-            p.playerId = ${playerId} 
-            AND p.isApproved = 1 
-            AND p.isActive = 1
-            AND NOT EXISTS (
-              SELECT 1 
-              FROM player_role pr 
-              JOIN roles r ON pr.roleId = r.roleId
-              WHERE pr.playerId = p.playerId 
-                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-          )
+          AND p.isApproved = 1 
+          AND p.isActive = 1
+          AND NOT EXISTS (
+            SELECT 1 
+            FROM player_role pr 
+            JOIN roles r ON pr.roleId = r.roleId
+            WHERE pr.playerId = p.playerId 
+              AND r.name IN ('SUPER_ADMIN', 'ADMIN')
         )`;
   },
 
@@ -306,6 +302,7 @@ export class PlayerQueries {
     if (RoleHelper.isAdminAndAbove(role)) {
       return queries.getAdminPlayerDetails(role, playerId);
     }
+    console.log(queries.getPlayerDetails(role, playerId, userId))
     return queries.getPlayerDetails(role, playerId, userId);
   };
 

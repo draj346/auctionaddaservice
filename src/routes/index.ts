@@ -45,6 +45,7 @@ router.get('/auth/validate', AuthController.isJWTTokenValid);
 // Players API
 router.get('/auth/players',validate(playerValidation.playerPaginationSchema, "query"), PlayerController.getPlayers);
 router.get('/auth/players/:playerId',validate(roleValidation.playerIdSchema, 'params'), PlayerController.getPlayersById);
+router.get('/auth/players/:playerId/edit',validate(roleValidation.playerIdSchema, 'params'), PlayerController.getPlayersByIdForEdit);
 router.post('/auth/players/add', validate(registrationValidation.addProfileSchema),  CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), RegistrationController.addPlayers);
 router.put('/auth/players/:playerId/update', validate(roleValidation.playerIdSchema, 'params'), validate(registrationValidation.updateProfileByRoleSchema), RegistrationController.updatePlayersByRole);
 router.delete('/auth/players/:playerId/delete', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdSchema, 'params'), RegistrationController.deletePlayer);
