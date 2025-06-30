@@ -8,35 +8,41 @@ const roleService = new RoleService();
 
 export class RoleController {
   static createAdmin = async (req: Request, res: Response) => {
-    const payload = { isAccessDenied: true } as ErrorResponsePayload;
     try {
       const playerId = parseInt(req.params.playerId);
-      await roleService.createAdmin(playerId);
-      ApiResponse.success(res, {}, 200, "Admin created successfully");
+      const result = await roleService.createAdmin(playerId);
+      if (result) {
+        ApiResponse.success(res, {}, 200, "Admin created successfully");
+      } else {
+        ApiResponse.error(res, "Update Failed", 200, {isUpdateFailed: true});
+      }
     } catch (error) {
       console.log(error);
       ApiResponse.error(
         res,
         "Something went happen. Please try again.",
         500,
-        payload
+        {isError: false}
       );
     }
   };
 
   static removeAdmin = async (req: Request, res: Response) => {
-    const payload = { isAccessDenied: true } as ErrorResponsePayload;
     try {
       const playerId = parseInt(req.params.playerId);
-      await roleService.deleteRole(playerId);
-      ApiResponse.success(res, {}, 200, "Role remove successfully");
+      const result = await roleService.deleteRole(playerId);
+       if (result) {
+        ApiResponse.success(res, {}, 200, "Role remove successfully");
+      } else {
+        ApiResponse.error(res, "Update Failed", 200, {isUpdateFailed: true});
+      }
     } catch (error) {
       console.log(error);
       ApiResponse.error(
         res,
         "Something went happen. Please try again.",
         500,
-        payload
+        {isError: false}
       );
     }
   };

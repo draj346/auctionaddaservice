@@ -23,7 +23,8 @@ export class RoleService {
 
   async createAdmin(playerId: number): Promise<boolean> {
     const [adminRoles] = await pool.execute<RowDataPacket[]>(
-      RoleQueries.getRoleIdByName
+      RoleQueries.getRoleIdByName,
+      ['ADMIN']
     );
 
     if (adminRoles.length === 0) {
@@ -32,10 +33,16 @@ export class RoleService {
 
     const adminRoleId = adminRoles[0].roleId;
 
+    await this.deleteRole(playerId);
+
     const [adminResult] = await pool.execute<ResultSetHeader>(RoleQueries.setRole, [
       playerId,
       adminRoleId,
     ]);
+
+    if (adminResult.affectedRows > 0 ) {
+      await this.approvePlayers([playerId]);
+    }
 
     return adminResult.affectedRows > 0;
   }

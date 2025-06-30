@@ -13,7 +13,6 @@ export const playerIdSchema = Joi.object<PlayerIdSchema>({
       "number.min": "Player ID must be at least 10001",
       "any.required": "Player ID is required",
     }),
-    // { isValidationFailed: true }
 });
 
 export const playerIdsSchema = Joi.object<PlayerIdsSchema>({

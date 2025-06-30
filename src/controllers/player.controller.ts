@@ -177,4 +177,23 @@ export class PlayerController {
       );
     }
   };
+
+  static getAdmins = async (req: Request, res: Response) => {
+    try {
+      const data = req.query as unknown as PlayerPaginationSchema;
+      const page = data.page || 1;
+      const search = data.search || "";
+      const limit = 100;
+
+      const { players, total, hasMore } = await playerService.getAdmins(
+        page,
+        limit,
+        search,
+      );
+      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.");
+    }
+  };
 }

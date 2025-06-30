@@ -20,10 +20,11 @@ export const CheckPermission = (permissionRoles: PlayerRole[]) => {
             return ApiResponse.error(
                 res,
                `Forbidden: You don't have proper permission to do this activity`,
-                403
+                403,
+                { isAccessDenied: true }
             );
         } catch (error) {
-            return ApiResponse.error(res, 'Permission check failed', 500);
+            return ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -45,10 +46,11 @@ export const CheckOrganiserPermission = (role: PlayerRole, permissionRoles: Play
             return ApiResponse.error(
                 res,
                `Forbidden: You don't have proper permission to do this activity`,
-                403
+                403,
+                { isAccessDenied: true }
             );
         } catch (error) {
-            return ApiResponse.error(res, 'Permission check failed', 500);
+            return ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -72,10 +74,11 @@ export const CheckOwnerWithOrganiserPermission = (role: PlayerRole, permissionRo
             return ApiResponse.error(
                 res,
                `Forbidden: You don't have proper permission to do this activity`,
-                403
+                403,
+                { isAccessDenied: true }
             );
         } catch (error) {
-            return ApiResponse.error(res, 'Permission check failed', 500);
+            return ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -97,10 +100,11 @@ export const CheckOwnerOnlyPermission = (role: PlayerRole, permissionRoles: Play
             return ApiResponse.error(
                 res,
                `Forbidden: You don't have proper permission to do this activity`,
-                403
+                403,
+                { isAccessDenied: true }
             );
         } catch (error) {
-            return ApiResponse.error(res, 'Permission check failed', 500);
+            return ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };

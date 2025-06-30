@@ -51,6 +51,32 @@ export class PlayerService {
     };
   }
 
+  async getAdmins(
+    page: number = 1,
+    limit: number,
+    search: string = "",
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getAdmins(search, offset, limit)
+      ),
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getAdminsCount(search)
+      ),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore
+    };
+  }
+
   async getPlayerForExport(role: PlayerRole, playerIds: number[]): Promise<Player[]> {
     const query = PlayerQueries.getPlayerForExport(role, playerIds);
     const [result] = await pool.execute<RowDataPacket[]>(query);

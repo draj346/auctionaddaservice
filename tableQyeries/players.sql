@@ -63,6 +63,7 @@ CREATE TABLE player_role (
   roleId INT NOT NULL,
   UNIQUE KEY unique_player_role (playerId, roleId),
   INDEX idx_player (playerId),
+  INDEX idx_role_player (roleId, playerId),
   FOREIGN KEY (playerId) 
     REFERENCES players(playerId) 
     ON DELETE CASCADE,

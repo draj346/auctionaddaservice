@@ -25,22 +25,17 @@ const queries = {
       WHERE 
         ${where ? "" : `p.playerId = ${userId} OR`}
         (
-            p.isApproved = 1 
-            AND p.isActive = 1
-            AND NOT EXISTS (
-              SELECT 1 
-              FROM player_role pr 
-              JOIN roles r ON pr.roleId = r.roleId
-              WHERE pr.playerId = p.playerId 
-                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-          ) ${where}
+          p.isApproved = 1 
+          AND p.isActive = 1
+          AND p.isNonPlayer = 0
+          ${where}
         )
       ORDER BY ${orderBy}
       LIMIT ${limit}
       OFFSET ${offset}`;
   },
 
-  getAdminPlayers: (role: PlayerRole, where: string, offset: number, limit: number, orderBy: string, active: string) => {
+  getPlayersByAdmin: (role: PlayerRole, where: string, offset: number, limit: number, orderBy: string, active: string) => {
     return `
       SELECT p.playerId, p.name, p.mobile, p.state, p.district,
              p.isApproved, p.isVerified, p.isNonPlayer, p.isActive, 1 as status
@@ -77,20 +72,15 @@ const queries = {
       WHERE 
         ${where ? "" : `p.playerId = ${userId} OR`}
         (
-            p.isApproved = 1 
-            AND p.isActive = 1
-            AND NOT EXISTS (
-              SELECT 1 
-              FROM player_role pr 
-              JOIN roles r ON pr.roleId = r.roleId
-              WHERE pr.playerId = p.playerId 
-                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-          ) ${where}
+          p.isApproved = 1 
+          AND p.isActive = 1
+          AND p.isNonPlayer = 0
+          ${where}
         )
       `;
   },
 
-  getCountAdminPlayers: (role: PlayerRole, where: string, active: string) => {
+  getCountPlayersByAdmin: (role: PlayerRole, where: string, active: string) => {
     return `
       SELECT  count(*) as total
       FROM players p
@@ -108,6 +98,58 @@ const queries = {
               )`
         } ${where}
       `;
+  },
+
+  getAdmins: (offset: number, limit: number) => {
+    return `
+      SELECT 
+        p.playerId, p.name, p.mobile, p.email,
+        1 AS isAdmin
+      FROM (
+        SELECT playerId
+        FROM player_role pr
+        JOIN roles r ON pr.roleId = r.roleId
+        WHERE r.name = 'ADMIN'
+      ) AS admin_ids
+      JOIN players p ON admin_ids.playerId = p.playerId
+      LIMIT ${limit}
+      OFFSET ${offset}`;
+  },
+
+  getAdminsCount: () => {
+    return `
+      SELECT count(*) as total FROM (
+        SELECT playerId
+        FROM player_role pr
+        JOIN roles r ON pr.roleId = r.roleId
+        WHERE r.name = 'ADMIN'
+      ) AS admin_ids
+      JOIN players p ON admin_ids.playerId = p.playerId`;
+  },
+
+  getAdminsByWhere: (where: string, offset: number, limit: number) => {
+    return `
+      SELECT 
+        p.playerId, p.name, p.mobile, p.email,
+        CASE WHEN EXISTS (
+          SELECT 1 
+          FROM player_role pr 
+          JOIN roles r ON pr.roleId = r.roleId 
+          WHERE pr.playerId = p.playerId 
+            AND r.name = 'ADMIN'
+        ) THEN 1 ELSE 0 END AS isAdmin
+      FROM players p
+      WHERE p.isActive = True ${where}
+      ORDER BY isAdmin DESC
+      LIMIT ${limit}
+      OFFSET ${offset}`;
+  },
+
+  getAdminsCountByWhere: (where: string) => {
+    return `
+      SELECT count(*) as total
+      FROM players p
+      WHERE p.isActive = True ${where}`;
   },
 
   getPlayerDetails: (role: PlayerRole, playerId: number, userId: number) => {
@@ -135,13 +177,7 @@ const queries = {
         p.playerId = ${playerId} 
           AND p.isApproved = 1 
           AND p.isActive = 1
-          AND NOT EXISTS (
-            SELECT 1 
-            FROM player_role pr 
-            JOIN roles r ON pr.roleId = r.roleId
-            WHERE pr.playerId = p.playerId 
-              AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-        )`;
+          AND p.isNonPlayer = 0`;
   },
 
   getAdminPlayerDetails: (role: PlayerRole, playerId: number) => {
@@ -270,6 +306,16 @@ export class PlayerQueries {
     return orderBy || defaultSort;
   }
 
+  private static buildAdminsWhereClause(search: string): string {
+    let where = "";
+    if (search) {
+      where= `AND (p.name LIKE '%${search}%' 
+               OR p.email LIKE '%${search}%' 
+               OR p.mobile LIKE '%${search}%') `;
+    }
+    return where;
+  }
+
   public static getPlayers = (
     role: PlayerRole,
     userId: number,
@@ -284,7 +330,7 @@ export class PlayerQueries {
     const orderBy = this.buildOrderByClause(sort || "", userId);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      return queries.getAdminPlayers(role, where, offset, limit, orderBy, active);
+      return queries.getPlayersByAdmin(role, where, offset, limit, orderBy, active);
     }
     return queries.getPlayers(role, userId, where, offset, limit, orderBy, !!search);
   };
@@ -293,16 +339,35 @@ export class PlayerQueries {
     const where = this.buildWhereClause(search, approved);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      return queries.getCountAdminPlayers(role, where, active);
+      return queries.getCountPlayersByAdmin(role, where, active);
     }
     return queries.getCountPlayers(userId, where, !!search);
+  };
+
+  public static getAdmins = (
+    search: string,
+    offset: number,
+    limit: number,
+  ) => {
+    const where = this.buildAdminsWhereClause(search);
+    if (where) {
+      return queries.getAdminsByWhere(where, offset, limit);
+    }
+    return queries.getAdmins(offset, limit);
+  };
+
+  public static getAdminsCount = (search: string) => {
+    const where = this.buildAdminsWhereClause(search);
+    if (where) {
+      return queries.getAdminsCountByWhere(where);
+    }
+    return queries.getAdminsCount();
   };
 
   public static getPlayerById = (role: PlayerRole, playerId: number, isActive: boolean, userId: number) => {
     if (RoleHelper.isAdminAndAbove(role)) {
       return queries.getAdminPlayerDetails(role, playerId);
     }
-    console.log(queries.getPlayerDetails(role, playerId, userId))
     return queries.getPlayerDetails(role, playerId, userId);
   };
 

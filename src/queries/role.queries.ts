@@ -12,7 +12,6 @@ export const RoleQueries = {
   getRoleIdByName: `SELECT roleId from roles WHERE name = ?`,
   deleteRole: `delete from player_role where playerId = ?`,
   setRole: `INSERT INTO player_role (playerId, roleId)
-            VALUES (?, ?)
-            ON DUPLICATE KEY UPDATE playerId = playerId`,
+            VALUES (?, ?)`,
 };
 
