@@ -8,11 +8,12 @@ import {
 export const initialRegistrationSchema = Joi.object<InitialRegistrationData>({
   name: Joi.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
   mobile: Joi.string().trim().pattern(/^[5-9][0-9]{9}$/) .required(),
-  email: Joi.string().trim().email().allow('').required()
+  email: Joi.string().trim().email().allow('').required(),
+  state: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+  district: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
 });
 
 export const updateProfileSchema = Joi.object<UpdateProfileSchemaData>({
-  name: Joi.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
   playerId: Joi.number().required().min(1),
   jerseyNumber: Joi.string()
   .pattern(/^[0-9]{1,6}$/)
@@ -37,7 +38,8 @@ export const updateProfileSchema = Joi.object<UpdateProfileSchemaData>({
 });
 
 export const updateProfileByRoleSchema = Joi.object<UpdateProfileSchemaData>({
-  name: Joi.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
+  state: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+  district: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
   jerseyNumber: Joi.string()
   .pattern(/^[0-9]{1,6}$/)
   .allow('', null)
@@ -64,6 +66,8 @@ export const addProfileSchema = Joi.object<AddProfileSchemaData>({
   name: Joi.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
   mobile: Joi.string().trim().pattern(/^[5-9][0-9]{9}$/) .required(),
   email: Joi.string().trim().email().allow('').required(),
+  state: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+  district: Joi.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
   jerseyNumber: Joi.string()
   .pattern(/^[0-9]{1,6}$/)
   .allow('', null)

@@ -11,10 +11,9 @@ export class PlayerService {
     page: number = 1,
     limit: number,
     search: string = "",
-    owner: string = "all",
     approved: string = "all",
     sort: string,
-    isActive: boolean = true,
+    active: string,
   ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
 
@@ -22,24 +21,22 @@ export class PlayerService {
       pool.execute<RowDataPacket[]>(
         PlayerQueries.getPlayers(
           role,
-          isActive,
           userId,
           search,
-          owner,
           approved,
           offset,
           limit,
-          sort
+          sort,
+          active
         )
       ),
       pool.execute<RowDataPacket[]>(
         PlayerQueries.getPlayersCount(
           role,
-          isActive,
           userId,
           search,
-          owner,
-          approved
+          approved,
+          active
         )
       ),
     ]);
@@ -54,8 +51,8 @@ export class PlayerService {
     };
   }
 
-  async getPlayerForExport(playerIds: number[]): Promise<Player[]> {
-    const query = PlayerQueries.getPlayerForExport(playerIds);
+  async getPlayerForExport(role: PlayerRole, playerIds: number[]): Promise<Player[]> {
+    const query = PlayerQueries.getPlayerForExport(role, playerIds);
     const [result] = await pool.execute<RowDataPacket[]>(query);
     return result.length > 0 ? (result as Player[]) : [];
   }

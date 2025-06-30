@@ -46,11 +46,11 @@ export class RoleController {
       const data: PlayerIdsSchema = req.body;
 
       const accessChecks = data.playerIds.map(async (playerId) => {
-        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+        const hasAccess = await RoleService.isAdminOrAboveForDelete(
           req.role,
-          playerId
+          playerId,
         );
-        return { playerId, allowed: !hasSameLevelAccess };
+        return { playerId, allowed: hasAccess && playerId != req.userId};
       });
 
       const accessResults = await Promise.all(accessChecks);

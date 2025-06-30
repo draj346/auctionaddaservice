@@ -26,15 +26,25 @@ export class RegistrationController {
         playerInfo.playerId ? "Registration initiated successfully" : "Something went happen. Please try again."
       );
     } catch (error) {
+      console.log('eror')
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
-  static updatePlayers = async (req: Request, res: Response) => {
+  static addPlayerInformation = async (req: Request, res: Response) => {
     try {
       const data: UpdateProfileSchemaData = req.body;
-      const success = await registrationService.updateProfile(data);
+
+      const isValidUser = await registrationService.isUserProfileSubmitted(data.playerId);
+
+      if (!isValidUser) {
+        ApiResponse.error(res, "Player not found or update failed", 400, {
+          isRegistered: true,
+        });
+      }
+
+      const success = await registrationService.addPlayerInformation(data);
 
       if (success) {
         ApiResponse.success(
@@ -58,7 +68,7 @@ export class RegistrationController {
       const result = await registrationService.createProfile(data);
 
       if (result && result.playerId) {
-        ApiResponse.success(res, null, 200, "Player added successfully");
+        ApiResponse.success(res, {...result}, 200, "Player added successfully");
       } else {
         ApiResponse.error(
           res,
@@ -81,7 +91,7 @@ export class RegistrationController {
       const data: UpdateProfileSchemaData = req.body;
       data.playerId = parseInt(req.params.playerId);
 
-      const hasAccess = await RoleService.hasAccess(
+      const hasAccess = await RoleService.isSelfOrAdminOrAbove(
         req.role,
         req.userId,
         data.playerId
@@ -94,7 +104,7 @@ export class RegistrationController {
 
       const success = await registrationService.updateProfile(data);
       if (success) {
-        ApiResponse.success(res, null, 200, "Profile updated successfully");
+        ApiResponse.success(res, {playerId : data.playerId}, 200, "Profile updated successfully");
       } else {
         ApiResponse.error(res, "Player not found or update failed", 404, {
           isError: true,
@@ -112,12 +122,11 @@ export class RegistrationController {
     try {
       const playerId = parseInt(req.params.playerId);
 
-      const hasAccess = await RoleService.hasAccess(
+      const hasAccess = await RoleService.isAdminOrAboveForDelete(
         req.role,
-        req.userId,
-        playerId
+        playerId,
       );
-      if (!hasAccess || req.userId * 1 === playerId) {
+      if (!hasAccess) {
         return ApiResponse.error(res, "Access Denied", 403, {
           isAccessDenied: true,
         });
@@ -144,11 +153,11 @@ export class RegistrationController {
       const data: PlayerIdsSchema = req.body;
 
       const accessChecks = data.playerIds.map(async (playerId) => {
-        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+        const hasAccess = await RoleService.isAdminOrAboveForDelete(
           req.role,
-          playerId
+          playerId,
         );
-        return { playerId, allowed: !hasSameLevelAccess };
+        return { playerId, allowed: hasAccess && playerId != req.userId };
       });
 
       const accessResults = await Promise.all(accessChecks);
@@ -205,6 +214,72 @@ export class RegistrationController {
     }
   };
 
+  static activatePlayers = async (req: Request, res: Response) => {
+    try {
+      const data: PlayerIdsSchema = req.body;
+
+      const accessChecks = data.playerIds.map(async (playerId) => {
+        const hasAccess = await RoleService.isAdminOrAboveForDelete(
+          req.role,
+          playerId,
+        );
+        return { playerId, allowed: hasAccess && playerId != req.userId };
+      });
+
+      const accessResults = await Promise.all(accessChecks);
+
+      const allowedPlayerIds = accessResults
+        .filter((result) => result.allowed)
+        .map((result) => result.playerId);
+
+      if (allowedPlayerIds.length === 0) {
+        return ApiResponse.error(res, "Access Denied", 403, {
+          isAccessDenied: true,
+        });
+      }
+
+      const success = await registrationService.activatePlayers(
+        allowedPlayerIds
+      );
+
+      if (!success) {
+        return ApiResponse.error(
+          res,
+          "Players not found or update failed",
+          404,
+          { isUpdateFailed: true }
+        );
+      }
+
+      if (data.playerIds.length !== allowedPlayerIds.length) {
+        const skippedPlayerIds = data.playerIds.filter(
+          (id) => !allowedPlayerIds.includes(id)
+        );
+        return ApiResponse.success(
+          res,
+          { skippedPlayerIds },
+          200,
+          "Some profiles activated successfully"
+        );
+      }
+
+      return ApiResponse.success(
+        res,
+        {skippedPlayerIds: []},
+        200,
+        "Profiles activated successfully"
+      );
+    } catch (error) {
+      console.error("activation error:", error);
+      return ApiResponse.error(
+        res,
+        "Something went wrong. Please try again.",
+        500,
+        { isError: true }
+      );
+    }
+  };
+
   static AddMultiplePlayers = async (req: Request, res: Response) => {
     try {
       await new Promise<void>((resolve, reject) => {
@@ -245,6 +320,8 @@ export class RegistrationController {
             "Full Name",
             "Mobile",
             "Email",
+            "State",
+            "District",
             "Jersey Number",
             "T-Shirt Size",
             "Lower Size",
@@ -258,8 +335,8 @@ export class RegistrationController {
         }
       );
 
-      if (!worksheet["K1"] || worksheet["K1"].v !== "Result") {
-        XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "K1" });
+      if (!worksheet["M1"] || worksheet["M1"].v !== "Result") {
+        XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "M1" });
       }
 
       const processedUsers = await Promise.all(
@@ -280,7 +357,7 @@ export class RegistrationController {
 
       processedUsers.forEach((user) => {
         XLSX.utils.sheet_add_aoa(worksheet, [[user.Result]], {
-          origin: `K${user.Row}`,
+          origin: `M${user.Row}`,
         });
       });
 
@@ -309,11 +386,11 @@ export class RegistrationController {
       const data: PlayerIdsSchema = req.body;
 
       const accessChecks = data.playerIds.map(async (playerId) => {
-        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+        const hasAccess = await RoleService.isAdminOrAboveForDelete(
           req.role,
-          playerId
+          playerId,
         );
-        return { playerId, allowed: !hasSameLevelAccess };
+        return { playerId, allowed: hasAccess && playerId != req.userId };
       });
 
       const accessResults = await Promise.all(accessChecks);
@@ -375,11 +452,11 @@ export class RegistrationController {
       const data: PlayerIdsSchema = req.body;
 
       const accessChecks = data.playerIds.map(async (playerId) => {
-        const hasSameLevelAccess = await RoleService.hasSameLevelAccess(
+        const hasAccess = await RoleService.isAdminOrAboveForDelete(
           req.role,
-          playerId
+          playerId,
         );
-        return { playerId, allowed: !hasSameLevelAccess };
+        return { playerId, allowed: hasAccess && playerId != req.userId };
       });
 
       const accessResults = await Promise.all(accessChecks);

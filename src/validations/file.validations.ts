@@ -9,6 +9,7 @@ export const uploadFile = Joi.object<FileData>({
 
 export const userUploadFile = Joi.object<FileData>({
   fileId: Joi.number().allow('', null).min(1).required(),
+  userId: Joi.number().min(1).required(),
   image: Joi.binary().required(),
 });
 

@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { PlayerService } from "../services/player.service";
 import { ApiResponse } from "../utils/apiResponse";
 import * as XLSX from "xlsx";
-import { PlayerIdsSchema, playerPaginationSchema } from "../types/player.types";
+import { PlayerIdsSchema, PlayerPaginationSchema } from "../types/player.types";
 import { RoleService } from "../services/role.service";
 
 const playerService = new PlayerService();
@@ -10,11 +10,11 @@ const playerService = new PlayerService();
 export class PlayerController {
   static getPlayers = async (req: Request, res: Response) => {
     try {
-      const data = req.query as unknown as playerPaginationSchema;
+      const data = req.query as unknown as PlayerPaginationSchema;
       const page = data.page || 1;
       const search = data.search || "";
-      const owner = data.owner || "all";
       const approved = data.approved || "all";
+      const active = data.active || "all";
       const sort = data.sort || "";
       const limit = 100;
 
@@ -24,9 +24,9 @@ export class PlayerController {
         page,
         limit,
         search,
-        owner,
         approved,
-        sort
+        sort,
+        active
       );
       ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     } catch (error) {
@@ -58,34 +58,6 @@ export class PlayerController {
       ApiResponse.error(res, "Something went happen. Please try again.", 500, {
         isError: true,
       });
-    }
-  };
-
-  static getInactivePlayers = async (req: Request, res: Response) => {
-    try {
-      const data = req.query as unknown as playerPaginationSchema;
-      const page = data.page || 1;
-      const search = data.search || "";
-      const owner = data.owner || "all";
-      const approved = data.approved || "all";
-      const limit = 100;
-      const sort = data.sort || "";
-
-      const { players, total, hasMore } = await playerService.getPlayers(
-        req.role,
-        req.userId,
-        page,
-        limit,
-        search,
-        owner,
-        approved,
-        sort,
-        false
-      );
-      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
-    } catch (error) {
-      console.log(error);
-      ApiResponse.error(res, "Something went happen. Please try again.");
     }
   };
 
@@ -134,7 +106,7 @@ export class PlayerController {
         }
       }
 
-      const players = await playerService.getPlayerForExport(allowedPlayerIds);
+      const players = await playerService.getPlayerForExport(req.role, allowedPlayerIds);
 
       if (players.length === 0) {
         return sendExcel(

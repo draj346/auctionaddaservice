@@ -1,5 +1,5 @@
 import pool from "../config/db.config";
-import { AuthQueries } from "../queries/auth.queries";
+import { AuthQueries, GuestAuthQueries } from "../queries/auth.queries";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import { PasswordSchema } from "../types/auth.types";
 import { encryptPassword } from "../utils/encryption";
@@ -14,8 +14,7 @@ export class AuthService {
       if (playerId) {
         return await this.verifyPlayerById(playerId);
       } else if (emailOrPhone) {
-        const result = await this.verifyPlayerByIdentifier(emailOrPhone);
-        return result ? true : false;
+        return await this.verifyPlayerByIdentifier(emailOrPhone);
       }
       return false;
     } catch (error) {
@@ -25,23 +24,44 @@ export class AuthService {
 
   private static async verifyPlayerById(playerId: number): Promise<boolean> {
     const [result] = await pool.execute<RowDataPacket[]>(
-      AuthQueries.findPlayerCountById,
-      [playerId, '1']
+      GuestAuthQueries.findPlayerCountById,
+      [playerId]
     );
     return result?.length > 0 ? result[0].count === 1 : false;
   }
 
-  public static async verifyPlayerByIdentifier(
-    identifier: string,
-    isSubmitted: boolean = false
-  ): Promise<PasswordSchema | null> {
-
-    const query = isSubmitted ? AuthQueries.findSubmittedPlayerByIdentifier : AuthQueries.findPlayerByIdentifier;
-    const parameter = isSubmitted ? [identifier, identifier, 1] : [identifier, identifier]; 
+   private static async verifyPlayerByIdentifier(identifier: string): Promise<boolean> {
     const [result] = await pool.execute<RowDataPacket[]>(
-      query,
-      parameter
+      GuestAuthQueries.findPlayerCountByIdentifier,
+      [identifier, identifier]
     );
+    return result?.length > 0 ? result[0].count === 1 : false;
+  }
+
+  public static async getPlayerIdByIdentifier(identifier: string): Promise<number | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      GuestAuthQueries.findPlayerIdByIdentifier,
+      [identifier, identifier]
+    );
+
+    return result?.length > 0 ? result[0].playerId: null;
+  }
+
+  public static async getPlayerImageByPlayerId(playerId: number): Promise<string | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      GuestAuthQueries.getImageByIdentifier,
+      [playerId]
+    );
+
+    return result?.length > 0 ? result[0].url : null;
+  }
+
+  public static async getPasswordByPlayerId(playerId: number): Promise<PasswordSchema | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      GuestAuthQueries.getPassword,
+      [playerId]
+    );
+
     return result?.length > 0 ? (result[0] as PasswordSchema) : null;
   }
 
@@ -51,8 +71,8 @@ export class AuthService {
   ): Promise<boolean> {
     const hashedPassword = await encryptPassword(password);
     const [result] = await pool.execute<ResultSetHeader>(
-      AuthQueries.updatePassword,
-      [hashedPassword, playerId]
+      GuestAuthQueries.updatePassword,
+      [playerId, hashedPassword]
     );
 
     return result.affectedRows > 0;

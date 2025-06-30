@@ -23,7 +23,7 @@ export class RoleService {
 
   async createAdmin(playerId: number): Promise<boolean> {
     const [adminRoles] = await pool.execute<RowDataPacket[]>(
-      RoleQueries.getAdminRole
+      RoleQueries.getRoleIdByName
     );
 
     if (adminRoles.length === 0) {
@@ -32,17 +32,12 @@ export class RoleService {
 
     const adminRoleId = adminRoles[0].roleId;
 
-    const [result1] = await pool.execute<ResultSetHeader>(RoleQueries.setRole, [
+    const [adminResult] = await pool.execute<ResultSetHeader>(RoleQueries.setRole, [
       playerId,
       adminRoleId,
     ]);
 
-    const [result] = await pool.execute<ResultSetHeader>(
-      RoleQueries.updatePlayerForAdmin,
-      [playerId]
-    );
-
-    return result.affectedRows > 0;
+    return adminResult.affectedRows > 0;
   }
 
   async deleteRole(playerId: number): Promise<boolean> {
@@ -114,4 +109,40 @@ export class RoleService {
     return this.hasRoleAccess(userRole, accessRole);
   }
 
+  static async isSelfOrAdminOrAbove(
+    userRole: PlayerRole,
+    playerId: number,
+    accessPlayerId: number,
+    self = true
+  ): Promise<boolean> {
+    const accessRole = (await this.getUserRole(accessPlayerId)) as PlayerRole;
+    
+    if (RoleHelper.isSuperAdmin(userRole)) {
+      return true;
+    }
+
+    if (RoleHelper.isAdmin(userRole)) {
+      return !RoleHelper.isSuperAdmin(accessRole);
+    }
+
+    return self && playerId * 1 === accessPlayerId * 1;
+  }
+
+  static async isAdminOrAboveForDelete(
+    userRole: PlayerRole,
+    accessPlayerId: number,
+  ): Promise<boolean> {
+    const accessRole = (await this.getUserRole(accessPlayerId)) as PlayerRole;
+    
+    if (RoleHelper.isSuperAdmin(userRole)) {
+      return true;
+    }
+
+    if (RoleHelper.isAdmin(userRole)) {
+      return !RoleHelper.isAdminAndAbove(accessRole);
+    }
+
+    return false;
+  }
+  
 }

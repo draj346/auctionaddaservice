@@ -2,10 +2,12 @@ import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
 import { FileService } from "../services/file.service";
-import { FILE_UPLOAD_FOLDER, FILE_UPLOAD_LOCATION } from "../config/env";
+import { FILE_UPLOAD_FOLDER } from "../config/env";
 import { upload } from "../utils/multerConfig";
+import { RegistrationService } from "../services/registration.service";
 
 const fileService = new FileService();
+const registrationService = new RegistrationService();
 
 export class FileController {
   static uploadImage = async (req: Request, res: Response) => {
@@ -26,7 +28,9 @@ export class FileController {
         const isValidUser = await AuthService.isValidUser(playerId);
         if (!isValidUser) {
           fileService.deleteUploadedFile(imagePath);
-          return ApiResponse.error(res, "User not found", 401);
+          return ApiResponse.error(res, "User not found", 401, {
+            isNotFound: true
+          });
         }
 
         let result = null;
@@ -76,7 +80,7 @@ export class FileController {
             isNotFound: true,
           });
         }
-        const { fileId } = req.body;
+        const { fileId, userId } = req.body;
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
           
@@ -97,6 +101,7 @@ export class FileController {
           });
         }
         if (result) {
+          await registrationService.updateImageId(result, userId);
           return ApiResponse.success(
             res,
             { fileId: result },

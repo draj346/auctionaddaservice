@@ -34,7 +34,9 @@ export class AuthController {
 
       const isValidUser = await AuthService.isValidUser(null, identifier);
       if (!isValidUser) {
-        return ApiResponse.error(res, "User is not valid", 401);
+        return ApiResponse.error(res, "User is not valid", 401, {
+          isNotFound: true
+        });
       }
 
       const sessionId = await encryptPassword(`session_${identifier}`);
@@ -83,23 +85,18 @@ export class AuthController {
   static resetPassword = async (req: Request, res: Response) => {
     try {
       const { sessionId, password }: ResetPasswordRequest = req.body;
-
       if (!otpService.isOTPVerified(sessionId)) {
         return ApiResponse.error(res, "OTP not verified for this session", 400);
       }
 
       const identifier = otpService.getIdentifier(sessionId);
-
-      const player = await AuthService.verifyPlayerByIdentifier(
-        identifier,
-        true
-      );
-      if (!player) {
+      const playerId = await AuthService.getPlayerIdByIdentifier(identifier);
+      if (!playerId) {
         return ApiResponse.error(res, "Player not found", 401);
       }
 
       const success = await AuthService.updatePassword(
-        player.playerId,
+        playerId,
         password
       );
 
@@ -124,7 +121,7 @@ export class AuthController {
         return ApiResponse.error(res, "Authentication method required", 400);
       }
 
-      let player;
+      let playerId;
       let isValid = false;
 
       if (method === "otp") {
@@ -132,39 +129,47 @@ export class AuthController {
           return ApiResponse.error(res, ErrorMessage.MISSING_PARAMS, 400);
         }
 
-        const playerId = otpService.verifyOTP(sessionId, code);
-        if (!playerId) {
+        const indentifierData  = otpService.verifyOTP(sessionId, code);
+        if (!indentifierData) {
           return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
         }
 
-        player = await AuthService.verifyPlayerByIdentifier(playerId, true);
+        playerId = await AuthService.getPlayerIdByIdentifier(indentifierData);
+        if (!playerId) {
+          return ApiResponse.error(res, ErrorMessage.PLAYER_NOT_FOUND, 401);
+        }
+
+        if (sessionId) {
+          otpService.invalidateOTP(sessionId);
+        }
       } else if (method === "password") {
         if (!identifier || !password) {
           return ApiResponse.error(res, ErrorMessage.MISSING_PARAMS, 400);
         }
 
-        player = await AuthService.verifyPlayerByIdentifier(identifier, true);
-        if (player) {
-          isValid = await comparePassword(password, player.password);
+        playerId = await AuthService.getPlayerIdByIdentifier(identifier);
+        if (!playerId) {
+          return ApiResponse.error(res, ErrorMessage.PLAYER_NOT_FOUND, 401);
         }
+
+        const dbPassword = await AuthService.getPasswordByPlayerId(playerId);
+        if (!dbPassword) {
+          return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
+        }
+
+        isValid = await comparePassword(password, dbPassword.password);
+
+        if (!isValid) {
+          return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
+        }
+
       } else {
         return ApiResponse.error(res, "Unsupported authentication method", 400);
       }
 
-      if (!player) {
-        return ApiResponse.error(res, ErrorMessage.PLAYER_NOT_FOUND, 401);
-      }
-
-      if (method === "password" && !isValid) {
-        return ApiResponse.error(res, ErrorMessage.INVALID_CREDENTIALS, 500);
-      }
-
-      if (sessionId) {
-        otpService.invalidateOTP(sessionId);
-      }
-
-      const role = await RoleService.getUserRole(player.playerId);
-      const tokenPayload = { playerId: player.playerId, role };
+      const image = await AuthService.getPlayerImageByPlayerId(playerId);
+      const role = await RoleService.getUserRole(playerId);
+      const tokenPayload = { playerId: playerId, role };
 
       const token = jwt.sign(tokenPayload, JWT_SECRET!, {
         expiresIn: "1d",
@@ -173,7 +178,7 @@ export class AuthController {
       const responsePayload = {
         token,
         role: role === ROLES.OWNER ? 'R': role[0],
-        image: player.image || ''
+        image: image || ''
       };
 
       ApiResponse.success(res, responsePayload, 200, "Login successful");

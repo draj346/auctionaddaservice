@@ -9,10 +9,10 @@ export const RoleQueries = {
                             WHERE p.playerId = pr.playerId 
                               AND p.isActive = 1
                           );`,
-  getAdminRole: `SELECT roleId FROM roles WHERE name = 'ADMIN'`,
+  getRoleIdByName: `SELECT roleId from roles WHERE name = ?`,
+  deleteRole: `delete from player_role where playerId = ?`,
   setRole: `INSERT INTO player_role (playerId, roleId)
             VALUES (?, ?)
             ON DUPLICATE KEY UPDATE playerId = playerId`,
-  deleteRole: `delete from player_role where playerId = ?`,
-  updatePlayerForAdmin: `update players set isNonPlayer = 1, isApproved = 1 where playerId = ?`,
 };
+

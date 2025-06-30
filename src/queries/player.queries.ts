@@ -1,66 +1,61 @@
-import { PlayerRole, ROLES } from "../constants/roles.constants";
+import { PlayerRole } from "../constants/roles.constants";
 import { RoleHelper } from "../helpers/roles.helpers";
-import * as XLSX from "xlsx";
 
 const queries = {
-  getPlayers: (
-    role: PlayerRole,
-    userId: number,
-    where: string,
-    offset: number,
-    limit: number,
-    orderBy: string
-  ) => {
+  getPlayers: (role: PlayerRole, userId: number, where: string, offset: number, limit: number, orderBy: string, isGlobalSearch: boolean) => {
     return `SELECT 
-        p.playerId, p.name, p.mobile, p.email
-        ${RoleHelper.isOrganiserAndOwner(role) ? ", p.pricePerMatch" : ""}
-        ${RoleHelper.isOrganiser(role) ? ", p.willJoinAnyOwner" : ""},
-        ${
-          RoleHelper.isOrganiser(role)
-            ? "1 as status"
-            : `(p.playerId = ${userId}) AS status`
-        }
+        p.playerId, p.name,
+        CASE 
+            WHEN p.playerId = ${userId} THEN p.mobile
+            ELSE CONCAT(
+                REPEAT('*', GREATEST(CHAR_LENGTH(p.mobile) - 4, 0)),
+                SUBSTRING(p.mobile, -4)
+            )
+        END AS mobile,
+        p.state, p.district, (p.playerId = ${userId}) AS status
       FROM players p
-      WHERE p.isApproved = 1 
-        AND p.isActive = 1
-        AND (
-          p.isNonPlayer = 0 
-          OR p.playerId = ${userId} 
+      ${
+        isGlobalSearch
+          ? ""
+          : `JOIN (SELECT district 
+                    FROM players 
+                    WHERE playerId = ${userId}
+                  ) user_district ON p.district = user_district.district`
+      }
+      WHERE 
+        ${where ? "" : `p.playerId = ${userId} OR`}
+        (
+            p.isApproved = 1 
+            AND p.isActive = 1
+            AND NOT EXISTS (
+              SELECT 1 
+              FROM player_role pr 
+              JOIN roles r ON pr.roleId = r.roleId
+              WHERE pr.playerId = p.playerId 
+                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
+          ) ${where}
         )
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM player_role pr 
-          JOIN roles r ON pr.roleId = r.roleId
-          WHERE pr.playerId = p.playerId 
-            AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-        ) ${where}
       ORDER BY ${orderBy}
       LIMIT ${limit}
       OFFSET ${offset}`;
   },
 
-  getAdminPlayers: (
-    role: PlayerRole,
-    isActive: boolean,
-    where: string,
-    offset: number,
-    limit: number,
-    orderBy: string
-  ) => {
+  getAdminPlayers: (role: PlayerRole, where: string, offset: number, limit: number, orderBy: string, active: string) => {
     return `
-      SELECT p.playerId, p.name, p.mobile, p.email, p.pricePerMatch, p.willJoinAnyOwner,
-             p.isApproved, p.isNonPlayer, 1 as status
+      SELECT p.playerId, p.name, p.mobile, p.state, p.district,
+             p.isApproved, p.isVerified, p.isNonPlayer, p.isActive, 1 as status
       FROM players p
-      WHERE p.isActive = ${isActive ? 1 : 0}
+        WHERE 1=1
+        ${active !== "all" ? ` AND p.isActive = ${active === "Yes" ? 1 : 0}` : ""}
         ${
           RoleHelper.isSuperAdmin(role)
             ? ""
-            : `AND NOT EXISTS (
+            : ` AND NOT EXISTS (
                 SELECT 1 
                 FROM player_role pr 
                 JOIN roles r ON pr.roleId = r.roleId
                 WHERE pr.playerId = p.playerId 
-                  AND r.name = 'SUPER_ADMIN'
+                  AND r.name IN ('SUPER_ADMIN', 'ADMIN')
               )`
         } ${where}
       ORDER BY ${orderBy}
@@ -68,44 +63,48 @@ const queries = {
       OFFSET ${offset}`;
   },
 
-  getCountPlayers: (userId: number, where: string) => {
+  getCountPlayers: (userId: number, where: string, isGlobalSearch: boolean) => {
     return `SELECT count(*) as total
       FROM players p
-      WHERE p.isApproved = 1 
-        AND p.isActive = 1
-        AND (
-          p.isNonPlayer = 0 
-          OR p.playerId = ${userId} 
+      ${
+        isGlobalSearch
+          ? ""
+          : `JOIN (SELECT district 
+                    FROM players 
+                    WHERE playerId = ${userId}
+                  ) user_district ON p.district = user_district.district`
+      }
+      WHERE 
+        ${where ? "" : `p.playerId = ${userId} OR`}
+        (
+            p.isApproved = 1 
+            AND p.isActive = 1
+            AND NOT EXISTS (
+              SELECT 1 
+              FROM player_role pr 
+              JOIN roles r ON pr.roleId = r.roleId
+              WHERE pr.playerId = p.playerId 
+                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
+          ) ${where}
         )
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM player_role pr 
-          JOIN roles r ON pr.roleId = r.roleId
-          WHERE pr.playerId = p.playerId 
-            AND r.name IN ('SUPER_ADMIN', 'ADMIN')
-        )
-        ${where ? ` ${where}` : ""}
       `;
   },
 
-  getCountAdminPlayers: (
-    role: PlayerRole,
-    isActive: boolean,
-    where: string
-  ) => {
+  getCountAdminPlayers: (role: PlayerRole, where: string, active: string) => {
     return `
       SELECT  count(*) as total
       FROM players p
-      WHERE p.isActive = ${isActive ? 1 : 0}
+      WHERE 1=1
+        ${active !== "all" ? ` AND p.isActive = ${active === "Yes" ? 1 : 0}` : ""}
         ${
           RoleHelper.isSuperAdmin(role)
             ? ""
-            : `AND NOT EXISTS (
+            : ` AND NOT EXISTS (
                 SELECT 1 
                 FROM player_role pr 
                 JOIN roles r ON pr.roleId = r.roleId
                 WHERE pr.playerId = p.playerId 
-                  AND r.name = 'SUPER_ADMIN'
+                  AND r.name IN ('SUPER_ADMIN', 'ADMIN')
               )`
         } ${where}
       `;
@@ -114,92 +113,117 @@ const queries = {
   getPlayerDetails: (role: PlayerRole, playerId: number, userId: number) => {
     return `
       SELECT 
-        p.playerId, p.name, p.mobile, p.email, 
-        p.jerseyNumber, p.tShirtSize, p.lowerSize, 
-        p.hasCricheroesProfile, url as image, f.fileId
-        ${playerId === userId 
-            ? ", p.isPaidPlayer, p.pricePerMatch, p.willJoinAnyOwner" 
-            : (RoleHelper.isOrganiserAndOwner(role) 
-                ? ", p.isPaidPlayer, p.pricePerMatch" 
-                : "") +
-              (RoleHelper.isOrganiser(role) && playerId !== userId 
-                ? ", p.willJoinAnyOwner" 
-                : "")
+        p.playerId, p.name, p.state, p.district,
+        pi.jerseyNumber, pi.tShirtSize, pi.lowerSize, pi.hasCricheroesProfile, 
+        pi.isPaidPlayer, p.isVerified,
+        p.isApproved, p.isNonPlayer,
+        f.url AS image, f.fileId, (p.playerId = ${userId}) AS status
+        ${
+          playerId === userId
+            ? ", p.mobile, p.email, pi.pricePerMatch, pi.willJoinAnyOwner"
+            : (RoleHelper.isOrganiserAndOwner(role) ? ", pi.pricePerMatch" : "") +
+              (RoleHelper.isOrganiser(role) && playerId !== userId ? ", pi.willJoinAnyOwner" : "")
         }
-      FROM players p 
-      LEFT JOIN files f ON p.image = f.fileId
-      WHERE p.playerId = ${playerId}
-        AND (
-          p.isNonPlayer = 0 
-          OR p.playerId = ${playerId} 
-        )
-        AND p.isApproved = 1 
-        AND p.isActive = 1
-        AND NOT EXISTS (
-          SELECT 1 
-          FROM player_role pr 
-          JOIN roles r ON pr.roleId = r.roleId
-          WHERE pr.playerId = p.playerId 
-            AND r.name IN ('SUPER_ADMIN', 'ADMIN')
+      FROM players p
+      LEFT JOIN player_informations pi 
+          ON p.playerId = pi.playerId
+      LEFT JOIN player_images pimg 
+          ON p.playerId = pimg.playerId
+      LEFT JOIN files f 
+        ON pimg.imageId = f.fileId
+      WHERE 
+        p.playerId = ${playerId} 
+      OR
+        (
+            p.playerId = ${playerId} 
+            AND p.isApproved = 1 
+            AND p.isActive = 1
+            AND NOT EXISTS (
+              SELECT 1 
+              FROM player_role pr 
+              JOIN roles r ON pr.roleId = r.roleId
+              WHERE pr.playerId = p.playerId 
+                AND r.name IN ('SUPER_ADMIN', 'ADMIN')
+          )
         )`;
   },
 
-  getAdminPlayerDetails: (role: PlayerRole, playerId: number,  isActive: boolean) => {
+  getAdminPlayerDetails: (role: PlayerRole, playerId: number) => {
     return `
-      SELECT 
-        p.playerId, p.name, p.mobile, p.email, p.jerseyNumber, 
-        p.tShirtSize, p.lowerSize, p.hasCricheroesProfile, p.isPaidPlayer,
-        p.pricePerMatch, p.willJoinAnyOwner, p.isApproved, 
-        p.isNonPlayer, url as image, f.fileId
-      FROM players p 
-      LEFT JOIN files f ON p.image = f.fileId
-      WHERE p.playerId = ${playerId}
-        AND p.isActive = ${isActive ? 1 : 0}
-        ${
-          RoleHelper.isSuperAdmin(role)
-            ? ""
-            : `AND NOT EXISTS (
-          SELECT 1 
-          FROM player_role pr 
-          JOIN roles r ON pr.roleId = r.roleId
-          WHERE pr.playerId = p.playerId 
-            AND r.name = 'SUPER_ADMIN'
-        )`
-        }`;
+    SELECT 
+     p.playerId, p.name, p.state, p.district,
+        pi.jerseyNumber, pi.tShirtSize, pi.lowerSize, pi.hasCricheroesProfile, 
+        pi.isPaidPlayer, p.isVerified,
+        p.isApproved, p.isNonPlayer,
+        f.url AS image, f.fileId, 1 AS status , p.mobile, p.email, pi.pricePerMatch, pi.willJoinAnyOwner
+    FROM players p
+    LEFT JOIN player_informations pi 
+        ON p.playerId = pi.playerId
+    LEFT JOIN player_images pimg 
+        ON p.playerId = pimg.playerId
+    LEFT JOIN files f 
+      ON pimg.imageId = f.fileId
+    WHERE p.playerId = ${playerId}
+      ${
+        RoleHelper.isSuperAdmin(role)
+          ? ""
+          : `AND NOT EXISTS (
+                SELECT 1 
+                FROM player_role pr 
+                JOIN roles r ON pr.roleId = r.roleId
+                WHERE pr.playerId = p.playerId 
+                  AND r.name IN ('SUPER_ADMIN', 'ADMIN')
+              )`
+      }`;
   },
 
   approvePlayer: (ids: string) => {
     return `update players set isApproved = 1 where playerId IN (${ids})`;
   },
-  getPlayersForExport: (ids: string) => {
+
+  getPlayersForExport: (role: PlayerRole, ids: string) => {
     let query = `SELECT 
-                name AS "Full Name",
-                mobile AS "Mobile",
-                email AS "Email",
-                jerseyNumber AS "Jersey Number",
-                tShirtSize AS "T-Shirt Size",
-                lowerSize AS "Lower Size",
+                p.name AS "Full Name",
+                 ${
+                   RoleHelper.isSuperAdmin(role)
+                     ? `
+                    mobile AS "Mobile",
+                    email AS "Email",
+                  `
+                     : ""
+                 }
+                p.state AS "State",
+                p.district AS "District",
+                pi.jerseyNumber AS "Jersey Number",
+                pi.tShirtSize AS "T-Shirt Size",
+                pi.lowerSize AS "Lower Size",
                 CASE 
-                  WHEN hasCricheroesProfile THEN 'True'
+                  WHEN pi.hasCricheroesProfile THEN 'True'
                   ELSE 'False'
                 END AS "Has Cricheroes Profile",
                 CASE 
-                  WHEN isPaidPlayer THEN 'True'
+                  WHEN pi.isPaidPlayer THEN 'True'
                   ELSE 'False'
                 END AS "Is Paid Player",
-                pricePerMatch AS "Price Per Match",
+                pi.pricePerMatch AS "Price Per Match",
                 CASE 
-                  WHEN willJoinAnyOwner THEN 'True'
+                  WHEN pi.willJoinAnyOwner THEN 'True'
                   ELSE 'False'
                 END AS "Will Join Any Owner",
                 CASE 
-                  WHEN isActive THEN 'True'
+                  WHEN p.isActive THEN 'True'
                   ELSE 'False'
-                END AS "Status"
-              FROM players`;
+                END AS "Status",
+                CASE 
+                  WHEN p.isVerified  THEN 'True'
+                  ELSE 'False'
+                END AS "Is Verified Player"
+              FROM players p 
+              LEFT JOIN player_informations pi 
+                  ON p.playerId = pi.playerId`;
 
     if (!!ids) {
-      query += ` WHERE playerId IN (${ids})`;
+      query += ` WHERE p.playerId IN (${ids})`;
     }
 
     return query;
@@ -207,20 +231,12 @@ const queries = {
 };
 
 export class PlayerQueries {
-  private static buildWhereClause(
-    search: string,
-    owner: string,
-    approved: string
-  ): string {
+  private static buildWhereClause(search: string, approved: string): string {
     let where = "";
     if (search) {
       where += ` AND (p.name LIKE '%${search}%' 
                OR p.email LIKE '%${search}%' 
                OR p.mobile LIKE '%${search}%') `;
-    }
-
-    if (owner !== "all") {
-      where += ` AND p.willJoinAnyOwner = ${owner === "Yes" ? 1 : 0} `;
     }
 
     if (approved !== "all") {
@@ -232,70 +248,63 @@ export class PlayerQueries {
 
   private static buildOrderByClause(sort: string, userId: number): string {
     const defaultSort = `CASE WHEN p.playerId = ${userId} THEN 0 ELSE 1 END, p.playerId ASC`;
-    
+
     if (!sort) return defaultSort;
 
-    const sortRules = sort.split(',');
+    const sortRules = sort.split(",");
     const orderBy = sortRules
-      .map(rule => {
-        const [field, direction] = rule.split(':');
-        const safeDirection = direction.toUpperCase() === 'DESC' ? 'DESC' : 'ASC';
-        
+      .map((rule) => {
+        const [field, direction] = rule.split(":");
+        const safeDirection = direction.toUpperCase() === "DESC" ? "DESC" : "ASC";
+
         switch (field) {
-          case 'name': return `p.name ${safeDirection}`;
-          case 'email': return `p.email ${safeDirection}`;
-          case 'mobile': return `p.mobile ${safeDirection}`;
-          case 'pricePerMatch': return `p.pricePerMatch ${safeDirection}`;
-          default: return null;
+          case "name":
+            return `p.name ${safeDirection}`;
+          case "email":
+            return `p.email ${safeDirection}`;
+          case "mobile":
+            return `p.mobile ${safeDirection}`;
+          default:
+            return null;
         }
       })
       .filter(Boolean)
-      .join(', ');
+      .join(", ");
 
     return orderBy || defaultSort;
   }
 
   public static getPlayers = (
     role: PlayerRole,
-    isActive: boolean,
     userId: number,
     search: string,
-    owner: string,
     approved: string,
     offset: number,
     limit: number,
-    sort: string
+    sort: string,
+    active: string
   ) => {
-    const where = this.buildWhereClause(search, owner, approved);
-    const orderBy = this.buildOrderByClause(sort || '', userId);
+    const where = this.buildWhereClause(search, approved);
+    const orderBy = this.buildOrderByClause(sort || "", userId);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      const query =  queries.getAdminPlayers(role, isActive, where, offset, limit, orderBy);
-      return query;
+      return queries.getAdminPlayers(role, where, offset, limit, orderBy, active);
     }
-    const query =  queries.getPlayers(role, userId, where, offset, limit, orderBy);
-    return query;
+    return queries.getPlayers(role, userId, where, offset, limit, orderBy, !!search);
   };
 
-  public static getPlayersCount = (
-    role: PlayerRole,
-    isActive: boolean,
-    userId: number,
-    search: string,
-    owner: string,
-    approved: string
-  ) => {
-    const where = this.buildWhereClause(search, owner, approved);
+  public static getPlayersCount = (role: PlayerRole, userId: number, search: string, approved: string, active: string) => {
+    const where = this.buildWhereClause(search, approved);
 
     if (RoleHelper.isAdminAndAbove(role)) {
-      return queries.getCountAdminPlayers(role, isActive, where);
+      return queries.getCountAdminPlayers(role, where, active);
     }
-    return queries.getCountPlayers(userId, where);
+    return queries.getCountPlayers(userId, where, !!search);
   };
 
   public static getPlayerById = (role: PlayerRole, playerId: number, isActive: boolean, userId: number) => {
     if (RoleHelper.isAdminAndAbove(role)) {
-      return queries.getAdminPlayerDetails(role, playerId, isActive);
+      return queries.getAdminPlayerDetails(role, playerId);
     }
     return queries.getPlayerDetails(role, playerId, userId);
   };
@@ -304,7 +313,7 @@ export class PlayerQueries {
     return queries.approvePlayer(playerIds.join());
   };
 
-  public static getPlayerForExport = (playerIds: number[]) => {
-    return queries.getPlayersForExport(playerIds.join());
+  public static getPlayerForExport = (role: PlayerRole, playerIds: number[]) => {
+    return queries.getPlayersForExport(role, playerIds.join());
   };
 }

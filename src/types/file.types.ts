@@ -12,5 +12,5 @@ export interface FileSchemaProps {
 }
 
 export interface ExcelFileData {
-  file: string;
+  file: File;
 }

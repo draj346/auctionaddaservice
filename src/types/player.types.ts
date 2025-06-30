@@ -21,25 +21,30 @@ export interface InitialRegistrationData {
   name: string;
   mobile: string;
   email?: string;
+  state?: string;
+  district?: string;
 }
 
 export interface UpdateProfileSchemaData {
-  name: string;
+  state?: string;
+  district?: string;
   playerId: number;
+  image: number;
   jerseyNumber: number;
   tShirtSize: string;
   lowerSize: string;
   hasCricheroesProfile: boolean;
   isPaidPlayer: boolean;
   pricePerMatch: number;
-  image: number;
   willJoinAnyOwner: boolean;
 }
 
 export interface AddProfileSchemaData {
   name: string;
   mobile: string;
-  email?: string;
+  email: string;
+  state: string;
+  district: string;
   jerseyNumber: number;
   tShirtSize: string;
   lowerSize: string;
@@ -75,7 +80,9 @@ export interface PlayerIdsSchema {
 export interface AddProfileExcelSchema {
   'Full Name': string; 
   'Mobile': string;
-  'Email': number;
+  'Email': string;
+  'State': string;
+  'District': string;
   'Jersey Number': number;
   'T-Shirt Size': string;
   'Lower Size': string;
@@ -85,10 +92,10 @@ export interface AddProfileExcelSchema {
   'Will Join Any Owner': boolean;
 }
 
-export interface playerPaginationSchema {
+export interface PlayerPaginationSchema {
   page: number;
   search: string;
-  owner: string;
   approved: string;
   sort: string;
+  active: string;
 }

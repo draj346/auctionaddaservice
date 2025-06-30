@@ -28,7 +28,7 @@ router.post('/upload', validate(fileValidation.uploadFile), FileController.uploa
 
 // Registration
 router.post('/initialRegistration', validate(registrationValidation.initialRegistrationSchema), RegistrationController.initialRegistration);
-router.post('/updateProfile', validate(registrationValidation.updateProfileSchema), RegistrationController.updatePlayers);
+router.post('/addPlayerInformation', validate(registrationValidation.updateProfileSchema), RegistrationController.addPlayerInformation);
 
 // Login and Reset Password
 router.post('/sendOTP', validate(authValidation.sendOTPSchema), AuthController.sendOTP);
@@ -43,15 +43,15 @@ router.use('/auth', authMiddleware);
 router.get('/auth/validate', AuthController.isJWTTokenValid);
 
 // Players API
-router.get('/auth/players',validate(playerValidation.updateProfileSchema, "query"), PlayerController.getPlayers);
+router.get('/auth/players',validate(playerValidation.playerPaginationSchema, "query"), PlayerController.getPlayers);
 router.get('/auth/players/:playerId',validate(roleValidation.playerIdSchema, 'params'), PlayerController.getPlayersById);
-router.get('/auth/players/inactive',validate(playerValidation.updateProfileSchema, "query"), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.getInactivePlayers);
 router.post('/auth/players/add', validate(registrationValidation.addProfileSchema),  CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), RegistrationController.addPlayers);
 router.put('/auth/players/:playerId/update', validate(roleValidation.playerIdSchema, 'params'), validate(registrationValidation.updateProfileByRoleSchema), RegistrationController.updatePlayersByRole);
 router.delete('/auth/players/:playerId/delete', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdSchema, 'params'), RegistrationController.deletePlayer);
 router.delete('/auth/players/deactivate', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.deactivatePlayers);
-router.delete('/auth/players/nonplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToNonPlayers);
-router.delete('/auth/players/toplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN, ROLES.ORGANISER] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToPlayers);
+router.post('/auth/players/activate', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.activatePlayers);
+router.delete('/auth/players/nonplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToNonPlayers);
+router.delete('/auth/players/toplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToPlayers);
 router.post('/auth/players/import', validate(fileValidation.AddPlayersFile), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), RegistrationController.AddMultiplePlayers);
 router.post('/auth/players/export', validate(roleValidation.playerIdsOptionalSchema), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.exportPlayers);
 
