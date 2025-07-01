@@ -39,7 +39,7 @@ CREATE TABLE player_informations (
   isPaidPlayer BOOLEAN,
   pricePerMatch DECIMAL(6,2) UNSIGNED NULL,
   willJoinAnyOwner BOOLEAN,
-  custom_attributes JSON DEFAULT NULL,
+  customAttributes JSON DEFAULT NULL,
   modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (playerId) REFERENCES players(playerId),

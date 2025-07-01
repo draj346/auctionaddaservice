@@ -6,6 +6,7 @@ import * as authValidation from '../validations/auth.validations';
 import * as fileValidation from '../validations/file.validations';
 import * as roleValidation from '../validations/role.validations';
 import * as playerValidation from '../validations/player.validations';
+import * as NotificationValidation from '../validations/notification.validations';
 import { validate } from '../middleware/validation.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { FileController } from '../controllers/file.controller';
@@ -14,6 +15,7 @@ import { CheckPermission } from '../middleware/permissions.middleware';
 import { PlayerRole, ROLES } from '../constants/roles.constants';
 import { RoleController } from '../controllers/role.controller';
 import path from 'path';
+import { NotificationController } from '../controllers/notification.controller';
 
 const router = Router();
 
@@ -56,15 +58,20 @@ router.delete('/auth/players/nonplayer', CheckPermission([ROLES.ADMIN, ROLES.SUP
 router.delete('/auth/players/toplayer', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(roleValidation.playerIdsSchema), RegistrationController.updateToPlayers);
 router.post('/auth/players/import', validate(fileValidation.AddPlayersFile), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), RegistrationController.AddMultiplePlayers);
 router.post('/auth/players/export', validate(roleValidation.playerIdsOptionalSchema), CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.exportPlayers);
-
 // Upload User Image
 router.post('/auth/upload', validate(fileValidation.userUploadFile), FileController.userUploadImage);
-
 // Create/Remove Admin
 router.put('/auth/players/:playerId/role/admin', validate(roleValidation.playerIdSchema, 'params'), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), RoleController.createAdmin);
 router.delete('/auth/players/:playerId/role/admin/delete', validate(roleValidation.playerIdSchema, 'params'), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), RoleController.removeAdmin);
-
 // Approved Player
 router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema), CheckPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN] as PlayerRole[]), RoleController.approvePlayers);
+
+//Notifications
+router.post('/auth/players/notifications', NotificationController.getMyNotification);
+router.post('/auth/players/notifications/count', NotificationController.getNewNotificationCount);
+router.post('/auth/players/notifications/read', NotificationController.updateIsRead);
+router.post('/auth/players/notifications/actions', NotificationController.getMyPendingActionList);
+router.post('/auth/players/notifications/actions/update', validate(NotificationValidation.updatePendingActionSchema), NotificationController.updatePendingAction);
+
 
 export default router;

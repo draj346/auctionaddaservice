@@ -3,6 +3,8 @@ import { ApiResponse } from "../utils/apiResponse";
 import { RoleService } from "../services/role.service";
 import { ErrorResponsePayload } from "../types";
 import { PlayerIdsSchema } from "../types/player.types";
+import { NotificationService } from "../services/notification.service";
+import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 
 const roleService = new RoleService();
 
@@ -12,6 +14,12 @@ export class RoleController {
       const playerId = parseInt(req.params.playerId);
       const result = await roleService.createAdmin(playerId);
       if (result) {
+        NotificationService.createNotification(
+          playerId,
+          NotificationMessage.CHANGE_ROLE_TO_ADMIN,
+          NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
+          req.userId
+        );
         ApiResponse.success(res, {}, 200, "Admin created successfully");
       } else {
         ApiResponse.error(res, "Update Failed", 200, {isUpdateFailed: true});
@@ -32,6 +40,12 @@ export class RoleController {
       const playerId = parseInt(req.params.playerId);
       const result = await roleService.deleteRole(playerId);
        if (result) {
+        NotificationService.createNotification(
+          playerId,
+          NotificationMessage.REMOVE_ROLE_FROM_ADMIN,
+          NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
+          req.userId
+        );
         ApiResponse.success(res, {}, 200, "Role remove successfully");
       } else {
         ApiResponse.error(res, "Update Failed", 200, {isUpdateFailed: true});
@@ -78,6 +92,13 @@ export class RoleController {
           isUpdateFailed: true 
         });
       }
+
+       NotificationService.batchCreateNotification(
+          allowedPlayerIds,
+          NotificationMessage.APPROVED_PROFILE,
+          NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
+          req.userId
+        );
 
       if (data.playerIds.length !== allowedPlayerIds.length) {
         const skippedPlayerIds = data.playerIds.filter(

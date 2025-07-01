@@ -16,6 +16,8 @@ import { AuthService } from "../services/auth.service";
 import { ErrorMessage } from "../constants/constants";
 import { RoleService } from "../services/role.service";
 import { ROLES } from "../constants/roles.constants";
+import { NotificationService } from "../services/notification.service";
+import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 
 const otpService = new OTPService();
 const emailService = new EmailService();
@@ -102,6 +104,12 @@ export class AuthController {
 
       if (success) {
         otpService.invalidateOTP(sessionId);
+        NotificationService.createNotification(
+          playerId,
+          NotificationMessage.PASSWORD_UPDATED,
+          NOTIFICATIONS.PASSWORD_UPDATED as NotificationType,
+          playerId
+        );
         ApiResponse.success(res, {}, 200, "Password reset successfully");
       } else {
         ApiResponse.error(res, "Password reset failed", 500);
