@@ -1,7 +1,8 @@
 import pool from "../config/db.config";
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import {
-  NOTIFICATION_TYPE_MESSAGE,
+  NOTIFICATION_ROLE,
+  NotificationMessage,
   NOTIFICATIONS,
   NotificationType,
   PENDING_UPDATES_STATUS,
@@ -9,6 +10,7 @@ import {
 } from "../constants/notification.constants";
 import { NotificationQueries, NotificationQueriesFn } from "../queries/notification.queries";
 import { INotification, INotificationCount, IPendingUpdate } from "../types/notification.types";
+import { PlayerRole, ROLES } from "../constants/roles.constants";
 
 export class NotificationService {
   // Notifications
@@ -16,7 +18,8 @@ export class NotificationService {
     playerId: number,
     message: string,
     type: NotificationType,
-    submittedBy: number
+    submittedBy: number,
+    role: PlayerRole
   ): Promise<boolean> {
     try {
       const [result] = await pool.execute<ResultSetHeader>(NotificationQueries.createNotification, [
@@ -24,6 +27,7 @@ export class NotificationService {
         message,
         type,
         submittedBy,
+        NOTIFICATION_ROLE[role] || ''
       ]);
 
       return result.affectedRows > 0;
@@ -37,7 +41,8 @@ export class NotificationService {
     playerIds: number[],
     message: string,
     type: NotificationType,
-    submittedBy: number
+    submittedBy: number,
+    role: PlayerRole
   ): Promise<boolean> {
     if (playerIds.length === 0) return true;
 
@@ -45,12 +50,13 @@ export class NotificationService {
     const values: any[] = [];
 
     playerIds.forEach((playerId) => {
-      placeholders.push("(?, ?, ?, ?)");
-      values.push(playerId, message, type, submittedBy);
+      placeholders.push("(?, ?, ?, ?, ?)");
+      values.push(playerId, message, type, submittedBy, NOTIFICATION_ROLE[role]);
     });
 
     try {
-      await pool.execute<ResultSetHeader>(NotificationQueriesFn.batchCreateNotification(placeholders.join(", ")));
+      const query = NotificationQueriesFn.batchCreateNotification(placeholders.join(", "));
+      await pool.execute<ResultSetHeader>(query, values);
       return true;
     } catch (error) {
       console.error("Batch notification creation failed:", error);
@@ -61,7 +67,7 @@ export class NotificationService {
   static async getUserNotifications(playerId: number): Promise<INotification[]> {
     const [result] = await pool.execute<RowDataPacket[]>(NotificationQueries.getNotifications, [playerId]);
 
-    return result.length > 0 ? (result[0] as INotification[]) : [];
+    return result.length > 0 ? (result as INotification[]) : [];
   }
 
   static async getNewNotificationsCount(playerId: number): Promise<INotificationCount> {
@@ -70,18 +76,16 @@ export class NotificationService {
     ]);
     const [pendingUpdate] = await pool.execute<RowDataPacket[]>(NotificationQueries.getPendingUpdateCount, [playerId]);
 
-    let count = 0,
-      pending = 0;
+    let count = 0;
     if (notification.length > 0) {
       count = notification[0].total;
     }
 
     if (pendingUpdate.length > 0) {
-      pending = pendingUpdate[0].total;
-      count += pending;
+      count += pendingUpdate[0].total;
     }
 
-    return { pending, total: count };
+    return { total: count };
   }
 
   static async updateIsRead(playerId: number): Promise<boolean> {
@@ -95,7 +99,10 @@ export class NotificationService {
     playerId: number,
     submittedBy: number,
     updatedData: JSON,
-    message: string
+    message: string,
+    role: PlayerRole,
+    type: NotificationType,
+    previousData: JSON
   ): Promise<boolean> {
     const status = PENDING_UPDATES_STATUS.PENDING as PendingUpdateStatusType;
     const [result] = await pool.execute<ResultSetHeader>(NotificationQueries.createPendingUpdate, [
@@ -104,6 +111,9 @@ export class NotificationService {
       updatedData,
       status,
       message,
+      NOTIFICATION_ROLE[role] || '',
+      type,
+      previousData
     ]);
 
     return result.affectedRows > 0;
@@ -111,7 +121,7 @@ export class NotificationService {
 
   static async getPendingUpdates(playerId: number): Promise<IPendingUpdate[]> {
     const [result] = await pool.execute<RowDataPacket[]>(NotificationQueries.getPendingUpdate, [playerId]);
-    return result.length > 0 ? (result[0] as IPendingUpdate[]) : [];
+    return result.length > 0 ? (result as IPendingUpdate[]) : [];
   }
 
   static async actionPendingUpdate(
@@ -129,14 +139,15 @@ export class NotificationService {
 
     const message =
       status === PENDING_UPDATES_STATUS.APPROVED
-        ? `You have successfully approved the request for ${NOTIFICATION_TYPE_MESSAGE[notifType]}`
-        : `YOu have rejected the request to update ${NOTIFICATION_TYPE_MESSAGE[notifType]}`;
+        ? NotificationMessage.REQUEST_APPROVED
+        : NotificationMessage.REQUEST_REJECTED;
 
     await this.createNotification(
       playerId,
       message,
       notifType as NotificationType,
-      submittedBy ? submittedBy : playerId
+      submittedBy ? submittedBy : playerId,
+      ROLES.PLAYER as PlayerRole
     );
 
     return true;

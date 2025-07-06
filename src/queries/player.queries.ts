@@ -177,7 +177,8 @@ const queries = {
         p.playerId = ${playerId} 
           AND p.isApproved = 1 
           AND p.isActive = 1
-          AND p.isNonPlayer = 0`;
+          ${playerId !== userId ? "AND p.isNonPlayer = 0" : ""}
+          `;
   },
 
   getAdminPlayerDetails: (role: PlayerRole, playerId: number) => {
@@ -261,6 +262,10 @@ const queries = {
     return query;
   },
 };
+
+export const publicPlayerQueries = {
+  getFileUrl: `select url from files where fileId =?`
+}
 
 export class PlayerQueries {
   private static buildWhereClause(search: string, approved: string): string {

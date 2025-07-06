@@ -1,5 +1,5 @@
 import pool from "../config/db.config";
-import { PlayerQueries } from "../queries/player.queries";
+import { PlayerQueries, publicPlayerQueries } from "../queries/player.queries";
 import { Player } from "../types/player.types";
 import { RowDataPacket } from "mysql2";
 import { PlayerRole } from "../constants/roles.constants";
@@ -90,5 +90,14 @@ export class PlayerService {
     );
 
     return result.length > 0 ? (result[0] as Player) : null;
+  }
+
+  async getImageUrl(fileId: number): Promise<string> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      publicPlayerQueries.getFileUrl,
+      [fileId]
+    );
+
+    return result.length > 0 ? result[0].url : '';
   }
 }

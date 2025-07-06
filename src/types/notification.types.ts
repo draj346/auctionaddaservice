@@ -1,9 +1,11 @@
-import { NotificationType, PendingUpdateStatusType } from "../constants/notification.constants";
+import { NotificationType } from "../constants/notification.constants";
 
 export interface INotification {
   createdAt: Date;
   message: string;
   type: NotificationType;
+  role: string;
+  isRead: boolean;
 }
 
 export interface IPendingUpdate {
@@ -11,14 +13,17 @@ export interface IPendingUpdate {
   submittedBy: number;
   updatedData: JSON;
   message: string;
+  previousData: JSON;
+  type: NotificationType;
+  role: string;
+  createdAt: Date;
 }
 
 export interface INotificationCount {
-  pending: number;
   total: number;
 }
 
 export interface IUpdatePendingUpdate {
     id: number;
-    status: PendingUpdateStatusType;
+    status: boolean;
 }

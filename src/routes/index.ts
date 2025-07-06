@@ -44,6 +44,13 @@ router.use('/auth', authMiddleware);
 // Validate JWT Token
 router.get('/auth/validate', AuthController.isJWTTokenValid);
 
+
+//Notifications
+router.post('/auth/players/notifications/actions/update', validate(NotificationValidation.updatePendingActionSchema), NotificationController.updatePendingAction);
+router.put('/auth/players/notifications/read', NotificationController.updateIsRead);
+router.get('/auth/players/notifications/count', NotificationController.getNewNotificationCount);
+router.get('/auth/players/notifications', NotificationController.getMyNotification);
+
 // Players API
 router.get('/auth/players',validate(playerValidation.playerPaginationSchema, "query"), PlayerController.getPlayers);
 router.get('/auth/players/admins',validate(playerValidation.adminsPaginationSchema, "query"), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), PlayerController.getAdmins);
@@ -66,12 +73,6 @@ router.delete('/auth/players/:playerId/role/admin/delete', validate(roleValidati
 // Approved Player
 router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema), CheckPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN] as PlayerRole[]), RoleController.approvePlayers);
 
-//Notifications
-router.post('/auth/players/notifications', NotificationController.getMyNotification);
-router.post('/auth/players/notifications/count', NotificationController.getNewNotificationCount);
-router.post('/auth/players/notifications/read', NotificationController.updateIsRead);
-router.post('/auth/players/notifications/actions', NotificationController.getMyPendingActionList);
-router.post('/auth/players/notifications/actions/update', validate(NotificationValidation.updatePendingActionSchema), NotificationController.updatePendingAction);
 
 
 export default router;

@@ -8,6 +8,6 @@ export const updatePendingActionSchema = Joi.object<IUpdatePendingUpdate>({
       "number.min": "Player ID must be at least 10001",
       "any.required": "Player ID is required",
     }),
-  status: Joi.string().valid("pending", "approved", "rejected").required(),
+  status: Joi.boolean().required(),
 });
 

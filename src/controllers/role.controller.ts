@@ -18,7 +18,8 @@ export class RoleController {
           playerId,
           NotificationMessage.CHANGE_ROLE_TO_ADMIN,
           NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-          req.userId
+          req.userId,
+          req.role
         );
         ApiResponse.success(res, {}, 200, "Admin created successfully");
       } else {
@@ -44,7 +45,8 @@ export class RoleController {
           playerId,
           NotificationMessage.REMOVE_ROLE_FROM_ADMIN,
           NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-          req.userId
+          req.userId,
+          req.role
         );
         ApiResponse.success(res, {}, 200, "Role remove successfully");
       } else {
@@ -97,7 +99,8 @@ export class RoleController {
           allowedPlayerIds,
           NotificationMessage.APPROVED_PROFILE,
           NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-          req.userId
+          req.userId,
+          req.role
         );
 
       if (data.playerIds.length !== allowedPlayerIds.length) {

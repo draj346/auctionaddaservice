@@ -5,6 +5,8 @@ import { FileService } from "../services/file.service";
 import { FILE_UPLOAD_FOLDER } from "../config/env";
 import { upload } from "../utils/multerConfig";
 import { RegistrationService } from "../services/registration.service";
+import { NotificationService } from "../services/notification.service";
+import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 
 const fileService = new FileService();
 const registrationService = new RegistrationService();
@@ -29,7 +31,7 @@ export class FileController {
         if (!isValidUser) {
           fileService.deleteUploadedFile(imagePath);
           return ApiResponse.error(res, "User not found", 401, {
-            isNotFound: true
+            isNotFound: true,
           });
         }
 
@@ -50,12 +52,7 @@ export class FileController {
           });
         }
         if (result) {
-          return ApiResponse.success(
-            res,
-            { fileId: result },
-            200,
-            "Image uploaded successfully"
-          );
+          return ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
         } else {
           return ApiResponse.error(res, "Upload failed");
         }
@@ -66,7 +63,7 @@ export class FileController {
     }
   };
 
-   static userUploadImage = async (req: Request, res: Response) => {
+  static userUploadImage = async (req: Request, res: Response) => {
     try {
       upload.single("image")(req, res, async (err) => {
         if (err) {
@@ -83,7 +80,7 @@ export class FileController {
         const { fileId, userId } = req.body;
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
-          
+
         let result = null;
 
         if (fileId) {
@@ -102,12 +99,14 @@ export class FileController {
         }
         if (result) {
           await registrationService.updateImageId(result, userId);
-          return ApiResponse.success(
-            res,
-            { fileId: result },
-            200,
-            "Image uploaded successfully"
+          await NotificationService.createNotification(
+            userId,
+            userId === req.userId ? NotificationMessage.IMAGE_UPDATE_BY_SELF : NotificationMessage.IMAGE_UPDATE_BY_ELSE,
+            NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
+            req.userId,
+            req.role
           );
+          return ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
         } else {
           return ApiResponse.error(res, "Upload failed", 200, {
             isUpdateFailed: true,

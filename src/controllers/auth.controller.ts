@@ -108,7 +108,8 @@ export class AuthController {
           playerId,
           NotificationMessage.PASSWORD_UPDATED,
           NOTIFICATIONS.PASSWORD_UPDATED as NotificationType,
-          playerId
+          playerId,
+          ROLES.PLAYER
         );
         ApiResponse.success(res, {}, 200, "Password reset successfully");
       } else {

@@ -5,6 +5,7 @@ import {
   InitialRegistrationData,
   UpdateProfileSchemaData,
   PlayerIdsSchema,
+  Player,
 } from "../types/player.types";
 import { ApiResponse } from "../utils/apiResponse";
 import { RegistrationService } from "../services/registration.service";
@@ -13,9 +14,11 @@ import { uploadToMemory } from "../utils/multerConfig";
 import * as XLSX from "xlsx";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
-import { FORMATTING_ROLE_FOR_NOTFICATION } from "../constants/roles.constants";
+import { PlayerService } from "../services/player.service";
+import { getChangedData } from "../utils/common";
 
 const registrationService = new RegistrationService();
+const playerService = new PlayerService();
 
 export class RegistrationController {
   static initialRegistration = async (req: Request, res: Response) => {
@@ -54,7 +57,8 @@ export class RegistrationController {
           data.playerId,
           NotificationMessage.ACCOUNT_CREATE_BY_SELF,
           NOTIFICATIONS.PROFILE_CREATED as NotificationType,
-          data.playerId
+          data.playerId,
+          req.role
         );
         ApiResponse.success(res, null, 200, "Registration completed successfully");
       } else {
@@ -75,9 +79,10 @@ export class RegistrationController {
         ApiResponse.success(res, { ...result }, 200, "Player added successfully");
         NotificationService.createNotification(
           result.playerId,
-          `${NotificationMessage.ACCOUNT_CREATE_BY_ELSE} ${FORMATTING_ROLE_FOR_NOTFICATION[req.role]}`,
+          NotificationMessage.ACCOUNT_CREATE_BY_ELSE,
           NOTIFICATIONS.PROFILE_CREATED as NotificationType,
-          req.userId
+          req.userId,
+          req.role
         );
       } else {
         ApiResponse.error(res, "Something went happen. Please try again.", 200, result, { isError: true });
@@ -101,6 +106,10 @@ export class RegistrationController {
           isAccessDenied: true,
         });
       }
+      let previousInfo: Player | null = null;
+      if (req.userId !== data.playerId) {
+        previousInfo = await playerService.getPlayerById(req.role, data.playerId, true, req.userId);
+      }
 
       const success = await registrationService.updateProfile(data);
       if (success) {
@@ -110,10 +119,31 @@ export class RegistrationController {
             : NotificationMessage.ACCOUNT_UPDATE_BY_ELSE;
         NotificationService.createNotification(
           data.playerId,
-          `${message} ${FORMATTING_ROLE_FOR_NOTFICATION[req.role]}`,
+          message,
           NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-          req.userId
+          req.userId,
+          req.role
         );
+
+        if (req.userId !== data.playerId) {
+          if (previousInfo) {
+            const updatedInfo: any = { ...data };
+            if (data.image) {
+              const image = await playerService.getImageUrl(data.image);
+              updatedInfo.image = image;
+            }
+            const { previousData, updatedData } = getChangedData(previousInfo, updatedInfo);
+            NotificationService.createPendingUpdate(
+              data.playerId,
+              req.userId,
+              updatedData,
+              NotificationMessage.APPROVAL_REQUEST,
+              req.role,
+              NOTIFICATIONS.APPROVAL_REQUEST as NotificationType,
+              previousData
+            );
+          }
+        }
         ApiResponse.success(res, { playerId: data.playerId }, 200, "Profile updated successfully");
       } else {
         ApiResponse.error(res, "Player not found or update failed", 404, {
@@ -282,15 +312,15 @@ export class RegistrationController {
         XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "M1" });
       }
 
-      const allowedPlayerIds:number[] = [];
+      const allowedPlayerIds: number[] = [];
       const processedUsers = await Promise.all(
         users.map(async (user, index) => {
           const row = index + 2;
           try {
-           const response = await registrationService.createProfileForExcel(user);
-           if (response.playerId) {
-             allowedPlayerIds.push(response.playerId);
-           }
+            const response = await registrationService.createProfileForExcel(user);
+            if (response.playerId) {
+              allowedPlayerIds.push(response.playerId);
+            }
             return { ...user, Result: "Success", Row: row };
           } catch (error: any) {
             return {
@@ -310,10 +340,11 @@ export class RegistrationController {
 
       NotificationService.batchCreateNotification(
         allowedPlayerIds,
-        `${NotificationMessage.ACCOUNT_CREATE_BY_ELSE} ${FORMATTING_ROLE_FOR_NOTFICATION[req.role]}`,
+        NotificationMessage.ACCOUNT_CREATE_BY_ELSE,
         NOTIFICATIONS.PROFILE_CREATED as NotificationType,
-        req.userId
-      )
+        req.userId,
+        req.role
+      );
 
       const updatedBuffer = XLSX.write(workbook, {
         type: "buffer",
@@ -356,10 +387,11 @@ export class RegistrationController {
 
       NotificationService.batchCreateNotification(
         allowedPlayerIds,
-        `${NotificationMessage.STATUS_CHANGE_TO_NON_PLAYER}`,
+        NotificationMessage.STATUS_CHANGE_TO_NON_PLAYER,
         NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-        req.userId
-      )
+        req.userId,
+        req.role
+      );
 
       if (data.playerIds.length !== allowedPlayerIds.length) {
         const skippedPlayerIds = data.playerIds.filter((id) => !allowedPlayerIds.includes(id));
@@ -400,10 +432,11 @@ export class RegistrationController {
 
       NotificationService.batchCreateNotification(
         allowedPlayerIds,
-        `${NotificationMessage.STATUS_CHANGE_TO_PLAYER}`,
+        NotificationMessage.STATUS_CHANGE_TO_PLAYER,
         NOTIFICATIONS.PROFILE_UPDATE as NotificationType,
-        req.userId
-      )
+        req.userId,
+        req.role
+      );
 
       if (data.playerIds.length !== allowedPlayerIds.length) {
         const skippedPlayerIds = data.playerIds.filter((id) => !allowedPlayerIds.includes(id));

@@ -2,7 +2,8 @@ CREATE TABLE notifications (
   id INT AUTO_INCREMENT PRIMARY KEY,
   playerId INT NOT NULL, -- For whome the notification is
   submittedBy INT NOT NULL, -- Who triggered the notification
-  message VARCHAR(500) NOT NULL,
+  message VARCHAR(50) NOT NULL,
+  role VARCHAR(10) NOT NULL,
   type VARCHAR(30) NOT NULL,
   isRead BOOLEAN DEFAULT false,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -22,7 +23,10 @@ CREATE TABLE pending_updates (
   playerId INT NOT NULL, -- For whome the notification is
   submittedBy INT NOT NULL, -- Who triggered the notification
   updatedData JSON NOT NULL,
-  message VARCHAR(500) NOT NULL,
+  previousData JSON NOT NULL,
+  message VARCHAR(50) NOT NULL,
+  role VARCHAR(10) NOT NULL,
+  type VARCHAR(30) NOT NULL,
   status ENUM('pending', 'approved', 'rejected') DEFAULT 'pending',
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updatedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
