@@ -7,10 +7,10 @@ const withMeta = (schema: Joi.Schema, meta: Record<string, any>) => {
 
 export const playerIdSchema = Joi.object<PlayerIdSchema>({
   playerId: 
-    Joi.number().integer().min(10001).required().messages({
+    Joi.number().integer().min(1).required().messages({
       "number.base": "Player ID must be a number",
       "number.integer": "Player ID must be an integer",
-      "number.min": "Player ID must be at least 10001",
+      "number.min": "Player ID must be at least 1",
       "any.required": "Player ID is required",
     }),
 });
@@ -20,7 +20,7 @@ export const playerIdsSchema = Joi.object<PlayerIdsSchema>({
     .items(
       Joi.number()
         .integer()
-        .min(10001)
+        .min(1)
         .required()
         .messages({
           'number.base': 'Player ID must be a number',
@@ -42,7 +42,7 @@ export const playerIdsOptionalSchema = Joi.object<PlayerIdsSchema>({
     .items(
       Joi.number()
         .integer()
-        .min(10001)
+        .min(1)
         .messages({
           'number.base': 'Player ID must be a number',
           'number.integer': 'Player ID must be an integer',

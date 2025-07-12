@@ -28,3 +28,10 @@ export interface PasswordSchema {
 export interface PlayerImageSchema {
   image: string;
 }
+
+export interface PlayerLoginSchema {
+  name: string;
+  email: string;
+  mobile: number;
+  playerId: number;
+}

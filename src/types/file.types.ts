@@ -4,6 +4,12 @@ export interface FileData {
   fileId?: number;
 }
 
+export interface AuctionFileData {
+  image: string;
+  auctionId: number;
+  fileId?: number;
+}
+
 export interface FileSchemaProps {
   name: string;
   path: string;
@@ -13,4 +19,9 @@ export interface FileSchemaProps {
 
 export interface ExcelFileData {
   file: File;
+}
+
+export interface FilePathSchema {
+  path: string;
+  fileId: number;
 }

@@ -21,33 +21,50 @@ export class RoleService {
     return role;
   }
 
-  async createAdmin(playerId: number): Promise<boolean> {
-    const [adminRoles] = await pool.execute<RowDataPacket[]>(
-      RoleQueries.getRoleIdByName,
-      ['ADMIN']
-    );
+  static async createAdmin(playerId: number): Promise<boolean> {
 
-    if (adminRoles.length === 0) {
-      return false;
-    }
+    const adminResult = await this.createRole(playerId, ROLES.ADMIN);
 
-    const adminRoleId = adminRoles[0].roleId;
-
-    await this.deleteRole(playerId);
-
-    const [adminResult] = await pool.execute<ResultSetHeader>(RoleQueries.setRole, [
-      playerId,
-      adminRoleId,
-    ]);
-
-    if (adminResult.affectedRows > 0 ) {
+    if (adminResult) {
       await this.approvePlayers([playerId]);
     }
 
-    return adminResult.affectedRows > 0;
+    return adminResult;
   }
 
-  async deleteRole(playerId: number): Promise<boolean> {
+  private static async createRole(playerId: number, roleName: string): Promise<boolean> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      RoleQueries.getRoleIdByName,
+      [roleName]
+    );
+
+    if (result.length === 0) {
+      return false;
+    }
+
+    const roleId = result[0].roleId;
+
+    await this.deleteRole(playerId);
+
+    const [userRoleResult] = await pool.execute<ResultSetHeader>(RoleQueries.setRole, [
+      playerId,
+      roleId,
+    ]);
+
+    return userRoleResult.affectedRows > 0;
+  }
+
+ static async createOrganiser(playerId: number): Promise<boolean> {
+    const result = await this.createRole(playerId, ROLES.ORGANISER);
+    return result;
+  }
+
+ static async createOwner(playerId: number): Promise<boolean> {
+    const result = await this.createRole(playerId, ROLES.OWNER);
+    return result;
+  }
+
+ static async deleteRole(playerId: number): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
       RoleQueries.deleteRole,
       [playerId]
@@ -56,7 +73,7 @@ export class RoleService {
     return result.affectedRows > 0;
   }
 
-  async approvePlayers(playerIds: number[]): Promise<boolean> {
+ static async approvePlayers(playerIds: number[]): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(
       PlayerQueries.approvePlayer(playerIds)
     );

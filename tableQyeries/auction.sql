@@ -1,126 +1,160 @@
 CREATE TABLE auctions (
   auctionId INT AUTO_INCREMENT PRIMARY KEY,
+  imageId INT NOT NULL,
   name VARCHAR(255) NOT NULL,
-  image INT,
+  state VARCHAR(30),
+  district VARCHAR(50),
+  paymentStatus BOOLEAN DEFAULT false,
   startDate DATE DEFAULT NULL,
-  endDate DATE DEFAULT NULL,
-  isApproved BOOLEAN DEFAULT false,
+  startTime VARCHAR(10) DEFAULT NULL,
+  maxPlayerPerTeam INT Not Null,
+  minPlayerPerTeam INT default 0,
+  playerId INT NOT NULL,
+  code VARCHAR(10) NOT NULL,
+  isLive BOOLEAN DEFAULT false, -- 
+  pointPerTeam INT NOT NULL,
+  baseBid INT NOT NULL,
+  baseIncreaseBy INT NOT NULL,
+  customAttributes JSON DEFAULT NULL,
+  defCategoryDisplayOrderId INT,
+  players_selection_rule ENUM('RANDOM', 'MANUAL', 'SEQUENCE') Default 'RANDOM',
   modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT true,
-  INDEX (isActive),
-  INDEX (isApproved),
+  FOREIGN KEY (playerId) REFERENCES players(playerId) ON DELETE CASCADE,
   INDEX (startDate),
-  INDEX (endDate)
-) AUTO_INCREMENT=10001;
+  INDEX idx_auction_status (auctionId, paymentStatus, isLive),
+  INDEX idx_auction_active_status (auctionId, isActive, isLive),
+  INDEX idx_auction_status_active (playerId, paymentStatus, isActive),
+  INDEX idx_auction_active (playerId, isActive)
+) AUTO_INCREMENT=1001;
 
-CREATE TABLE auction_organiser (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  auctionId INT NOT NULL,
-  playerId INT NOT NULL,
-  UNIQUE KEY unique_auction_organiser (auctionId, playerId),
-  INDEX (playerId),
+CREATE TABLE transactions (
+  id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  auctionId INTEGER UNIQUE REFERENCES auctions(auctionId),
+  amount DECIMAL(10,2) NOT NULL,
+  transactionId VARCHAR(100) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'pending',
+  createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+);
 
 CREATE TABLE teams (
   teamId INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
   shortName VARCHAR(30) NOT NULL,
   image INT,
-  shortcutKey VARCHAR(30) NOT NULL,
+  shortcutKey CHAR(1) NOT NULL,
+  auctionId INT NOT NULL,
   modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT true,
   INDEX (isActive),
   INDEX (name),
-  INDEX (shortName)
-) AUTO_INCREMENT=10001;
+  INDEX (shortName),
+  INDEX auctionId_idx (auctionId)
+) AUTO_INCREMENT=1001;
 
-CREATE TABLE auction_team_owner (
+CREATE TABLE team_owner (
   id INT AUTO_INCREMENT PRIMARY KEY,
   auctionId INT NOT NULL,
   teamId INT NOT NULL,
   ownerId INT NOT NULL,
-  penalty INT DEFAULT 0,
-  totalBalance INT DEFAULT 0,
-  INDEX (auctionId),
-  INDEX (teamId),
+  tag ENUM('OWNER','CO-OWNER') NOT NULL,
   INDEX (ownerId),
-  UNIQUE KEY unique_auction_team (auctionId, teamId),
+  INDEX teamId_idx (teamId),
+  INDEX (auctionId),
   FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE,
-  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE,
+  FOREIGN KEY (ownerId) REFERENCES players(playerId) ON DELETE CASCADE
+) AUTO_INCREMENT=1001;
 
 CREATE TABLE auction_category (
   categoryId INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(255) NOT NULL,
+  auctionId INT NOT NULL,
+  maxPlayer INT,
+  minPlayer INT DEFAULT 0,
+  baseBid INT,
+  reserveBid INT,
+  highestBid INT,
+  categoryHighestBid INT,
+  increments JSON DEFAULT NULL,
   modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-  isActive BOOLEAN DEFAULT true,
-  auctionId INT NOT NULL,
   INDEX (auctionId),
-  INDEX (isActive),
   INDEX (name),
   FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
-
-CREATE TABLE auction_shortlist_player (
-  id INT AUTO_INCREMENT PRIMARY KEY,
-  auctionId INT NOT NULL,
-  playerId INT NOT NULL,
-  status ENUM('SOLD', 'AVAILABLE', 'UNSOLD') NOT NULL,
-  INDEX (auctionId),
-  INDEX (playerId),
-  INDEX (status),
-  INDEX auction_player_status (auctionId, status),
-  UNIQUE KEY unique_auction_player (auctionId, playerId),
-  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+) AUTO_INCREMENT=1001;
 
 CREATE TABLE auction_category_player (
   id INT AUTO_INCREMENT PRIMARY KEY,
-  categoryId INT NOT NULL,
+  auctionId INT NOT NULL,
+  categoryId INT,
   playerId INT NOT NULL,
-  INDEX (categoryId),
-  INDEX (playerId),
-  UNIQUE KEY unique_category_player (categoryId, playerId),
+  baseBid INT,
+  status ENUM('SOLD', 'AVAILABLE', 'UNSOLD') NOT NULL,
+  INDEX idx_category (categoryId),
+  INDEX idx_auction_player (auctionId, playerId, categoryId),
+  UNIQUE KEY unique_auction_player (auctionId, playerId),
+  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE,
   FOREIGN KEY (categoryId) REFERENCES auction_category(categoryId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+) AUTO_INCREMENT=1001;
 
-CREATE TABLE auction_team_whishlist (
+CREATE TABLE team_wishlist (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  auctionId INT NOT NULL,
   teamId INT NOT NULL,
   playerId INT NOT NULL,
-  INDEX (teamId),
+  tag ENUM('Captain','Vice Captain', 'Player') DEFAULT 'Player',
   INDEX (playerId),
+  INDEX (auctionId),
+  INDEX teamId_idx (teamId),
   UNIQUE KEY unique_team_wish (teamId, playerId),
+  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE,
   FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+) AUTO_INCREMENT=1001;
 
 CREATE TABLE player_feedback (
   id INT AUTO_INCREMENT PRIMARY KEY,
   playerId INT NOT NULL,
   feedback VARCHAR(500) NOT NULL,
   teamId INT NOT NULL,
-  createdBy INT NOT NULL,
+  providedBy INT NOT NULL,
   modifiedAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   isActive BOOLEAN DEFAULT true,
   INDEX (playerId),
   INDEX (teamId),
-  INDEX (createdBy),
+  INDEX (providedBy),
   INDEX (isActive),
-  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+  FOREIGN KEY (playerId) REFERENCES players(playerId) ON DELETE CASCADE,
+  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE,
+  FOREIGN KEY (providedBy) REFERENCES players(playerId) ON DELETE CASCADE
+) AUTO_INCREMENT=1001;
 
 CREATE TABLE auction_team_player (
   id INT AUTO_INCREMENT PRIMARY KEY,
   teamId INT NOT NULL,
   playerId INT NOT NULL,
   price INT DEFAULT 0,
+  auctionId INT NOT NULL,
   INDEX (teamId),
   INDEX (playerId),
-  UNIQUE KEY unique_team_player (teamId, playerId),
-  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE
-) AUTO_INCREMENT=10001;
+  INDEX (auctionId),
+  UNIQUE KEY unique_team_player_auction (teamId, playerId, auctionId),
+  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE,
+  FOREIGN KEY (playerId) REFERENCES players(playerId) ON DELETE CASCADE,
+  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
+) AUTO_INCREMENT=1001;
+
+CREATE TABLE auction_team_penalty_booster (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  teamId INT NOT NULL,
+  auctionId INT NOT NULL, 
+  pointAdjustment INT DEFAULT 0,
+  INDEX (teamId),
+  INDEX (auctionId),
+  FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE,
+  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
+) AUTO_INCREMENT=1001;

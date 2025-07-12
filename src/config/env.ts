@@ -14,3 +14,6 @@ export const FILE_UPLOAD_FOLDER = process.env.FILE_UPLOAD_FOLDER!;
 export const OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES 
   ? parseInt(process.env.OTP_EXPIRY_MINUTES) 
   : 2;
+export const FREE_AUCTION_CREATE_LIMIT = process.env.FREE_AUCTION_CREATE_LIMIT 
+  ? parseInt(process.env.FREE_AUCTION_CREATE_LIMIT) 
+  : 1;

@@ -6,7 +6,8 @@ import * as authValidation from '../validations/auth.validations';
 import * as fileValidation from '../validations/file.validations';
 import * as roleValidation from '../validations/role.validations';
 import * as playerValidation from '../validations/player.validations';
-import * as NotificationValidation from '../validations/notification.validations';
+import * as notificationValidation from '../validations/notification.validations';
+import * as auctionValidation from '../validations/auction.validations';
 import { validate } from '../middleware/validation.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { FileController } from '../controllers/file.controller';
@@ -16,6 +17,7 @@ import { PlayerRole, ROLES } from '../constants/roles.constants';
 import { RoleController } from '../controllers/role.controller';
 import path from 'path';
 import { NotificationController } from '../controllers/notification.controller';
+import { AuctionController } from '../controllers/auction.controller';
 
 const router = Router();
 
@@ -46,7 +48,7 @@ router.get('/auth/validate', AuthController.isJWTTokenValid);
 
 
 //Notifications
-router.post('/auth/players/notifications/actions/update', validate(NotificationValidation.updatePendingActionSchema), NotificationController.updatePendingAction);
+router.post('/auth/players/notifications/actions/update', validate(notificationValidation.updatePendingActionSchema), NotificationController.updatePendingAction);
 router.put('/auth/players/notifications/read', NotificationController.updateIsRead);
 router.get('/auth/players/notifications/count', NotificationController.getNewNotificationCount);
 router.get('/auth/players/notifications', NotificationController.getMyNotification);
@@ -72,6 +74,13 @@ router.put('/auth/players/:playerId/role/admin', validate(roleValidation.playerI
 router.delete('/auth/players/:playerId/role/admin/delete', validate(roleValidation.playerIdSchema, 'params'), CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), RoleController.removeAdmin);
 // Approved Player
 router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema), CheckPermission([ROLES.SUPER_ADMIN, ROLES.ADMIN] as PlayerRole[]), RoleController.approvePlayers);
+// Auction
+router.post('/auth/auctions/upload', validate(fileValidation.userUploadForAuctionSchema), FileController.userUploadForAuction);
+router.post('/auth/auctions/new', validate(auctionValidation.upsetAuctionSchema), AuctionController.upsetAuction);
+router.post('/auth/auctions/view', AuctionController.getAuctions);
+router.post('/auth/auctions/delete', validate(auctionValidation.auctionIdSchema), AuctionController.deleteAuction);
+router.post('/auth/auctions/search', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionSearchTextSchema), AuctionController.getAuctionBySearch);
+
 
 
 

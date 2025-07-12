@@ -1,18 +1,15 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { RoleService } from "../services/role.service";
-import { ErrorResponsePayload } from "../types";
 import { PlayerIdsSchema } from "../types/player.types";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
-
-const roleService = new RoleService();
 
 export class RoleController {
   static createAdmin = async (req: Request, res: Response) => {
     try {
       const playerId = parseInt(req.params.playerId);
-      const result = await roleService.createAdmin(playerId);
+      const result = await RoleService.createAdmin(playerId);
       if (result) {
         NotificationService.createNotification(
           playerId,
@@ -39,7 +36,7 @@ export class RoleController {
   static removeAdmin = async (req: Request, res: Response) => {
     try {
       const playerId = parseInt(req.params.playerId);
-      const result = await roleService.deleteRole(playerId);
+      const result = await RoleService.deleteRole(playerId);
        if (result) {
         NotificationService.createNotification(
           playerId,
@@ -87,7 +84,7 @@ export class RoleController {
         });
       }
 
-      const success = await roleService.approvePlayers(allowedPlayerIds);
+      const success = await RoleService.approvePlayers(allowedPlayerIds);
 
       if (!success) {
         return ApiResponse.error(res, "Update failed", 200, { 

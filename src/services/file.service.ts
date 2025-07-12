@@ -2,7 +2,7 @@ import pool from "../config/db.config";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import fs from "fs/promises";
 import { FileQueries } from "../queries/file.queries";
-import { FileSchemaProps } from "../types/file.types";
+import { FilePathSchema, FileSchemaProps } from "../types/file.types";
 
 export class FileService {
   async uploadFile(data: FileSchemaProps): Promise<number> {
@@ -50,5 +50,18 @@ export class FileService {
     } catch (error) {
       console.error("Error deleting file:", error);
     }
+  }
+
+  async getFiles(fileId: number[]): Promise<FilePathSchema[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      FileQueries.findMultipleFilesByIds,
+      [fileId]
+    );
+
+    if (result.length > 0) {
+      return result[0] as FilePathSchema[];
+    }
+
+    return null;
   }
 }

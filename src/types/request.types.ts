@@ -5,6 +5,9 @@ declare global {
     interface Request {
       userId: number;
       role: PlayerRole;
+      name: string;
+      mobile: number;
+      email: string;
     }
   }
 }
@@ -12,4 +15,7 @@ declare global {
 export interface AuthTokenPayload {
   playerId: number;
   role: PlayerRole
+  name: string;
+  mobile: number;
+  email: string;
 }

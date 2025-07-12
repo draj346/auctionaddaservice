@@ -51,6 +51,13 @@ CREATE TABLE player_informations (
   INDEX idx_cricheroes (hasCricheroesProfile)
 );
 
+--Player Custom Attributes
+-- playerRole -Top-order batter, Middle-order batter, Bowler, All-rounder, Lower-order batter, Opening batter, None
+--battingStyle -Left-hand bat, Right-hand bat
+--bowlingStyle -Right-aram fast, Right-aram medium, Left-aram fast, Left-aram medium, Slow left-arm orthodox, Slow left-arm chinaman, Right-arm Off Break, Right-arm Leg Break
+--description VARCHAR(500)
+
+
 CREATE TABLE roles (
   roleId INT AUTO_INCREMENT PRIMARY KEY,
   name VARCHAR(20) NOT NULL UNIQUE,

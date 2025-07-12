@@ -7,6 +7,7 @@ export const NOTIFICATIONS = {
   PROFILE_CREATED: "profile_created",
   PASSWORD_UPDATED: "password_updated",
   AUCTION_CREATED: "auction_created",
+  AUCTION_UPDATED: "auction_updated",
   TEAM_CREATED: "team_created",
   FEEDBACK: "feedback",
   GENERAL: "general",
@@ -46,6 +47,9 @@ export const NotificationMessage = {
   REQUEST_REJECTED: "REQUEST_REJECTED",
   REQUEST_APPROVED: "REQUEST_APPROVED",
   APPROVAL_REQUEST: "APPROVAL_REQUEST",
+  AUCTION_CREATE_BY_SELF: "AUCTION_CREATE_BY_SELF",
+  AUCTION_UPDATE_BY_SELF: "AUCTION_UPDATE_BY_SELF",
+  AUCTION_UPDATE_BY_ELSE: "AUCTION_UPDATE_BY_ELSE",
 };
 
 export const NOTIFICATION_ROLE = {

@@ -7,6 +7,7 @@ import { upload } from "../utils/multerConfig";
 import { RegistrationService } from "../services/registration.service";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
+import { AuctionService } from "../services/auction.service";
 
 const fileService = new FileService();
 const registrationService = new RegistrationService();
@@ -102,6 +103,72 @@ export class FileController {
           await NotificationService.createNotification(
             userId,
             userId === req.userId ? NotificationMessage.IMAGE_UPDATE_BY_SELF : NotificationMessage.IMAGE_UPDATE_BY_ELSE,
+            NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
+            req.userId,
+            req.role
+          );
+          return ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
+        } else {
+          return ApiResponse.error(res, "Upload failed", 200, {
+            isUpdateFailed: true,
+          });
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Uploading failed. Please try again.", 500, {
+        isError: true,
+      });
+    }
+  };
+
+  static userUploadForAuction = async (req: Request, res: Response) => {
+    try {
+      upload.single("image")(req, res, async (err) => {
+        if (err) {
+          return ApiResponse.error(res, err.message, 400, {
+            isUpdateFailed: true,
+          });
+        }
+
+        if (!req.file) {
+          return ApiResponse.error(res, "No image uploaded", 400, {
+            isNotFound: true,
+          });
+        }
+        const { fileId, auctionId } = req.body;
+        const imagePath = req.file.path;
+        const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
+        let playerId = req.userId;
+
+        if (auctionId) {
+          const auctionPlayerId = await AuctionService.getAuctionPlayerId(auctionId);
+          if (!auctionPlayerId) {
+            return ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
+          }
+          playerId = auctionPlayerId;
+        }
+
+        let result = null;
+
+        if (fileId) {
+          result = await fileService.updateFile({
+            name: req.file.filename,
+            path: imagePath,
+            url,
+            fileId,
+          });
+        } else {
+          result = await fileService.uploadFile({
+            name: req.file.filename,
+            path: imagePath,
+            url,
+          });
+        }
+        if (result) {
+          await NotificationService.createNotification(
+            playerId,
+            playerId === req.userId ? NotificationMessage.IMAGE_UPDATE_BY_SELF : NotificationMessage.IMAGE_UPDATE_BY_ELSE,
             NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
             req.userId,
             req.role
