@@ -77,9 +77,11 @@ router.post('/auth/players/approve', validate(roleValidation.playerIdsSchema), C
 // Auction
 router.post('/auth/auctions/upload', validate(fileValidation.userUploadForAuctionSchema), FileController.userUploadForAuction);
 router.post('/auth/auctions/new', validate(auctionValidation.upsetAuctionSchema), AuctionController.upsetAuction);
-router.post('/auth/auctions/view', AuctionController.getAuctions);
-router.post('/auth/auctions/delete', validate(auctionValidation.auctionIdSchema), AuctionController.deleteAuction);
-router.post('/auth/auctions/search', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionSearchTextSchema), AuctionController.getAuctionBySearch);
+router.get('/auth/auctions', AuctionController.getAuctions);
+router.delete('/auth/auctions/:auctionId/delete', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.deleteAuction);
+router.put('/auth/auctions/:auctionId/approve', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.approveAuction);
+router.get('/auth/auctions/search', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionSearchTextSchema, "query"), AuctionController.getAuctionBySearch);
+router.get('/auth/auctions/:auctionId',validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionById);
 
 
 

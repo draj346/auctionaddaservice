@@ -19,7 +19,8 @@ export class NotificationService {
     message: string,
     type: NotificationType,
     submittedBy: number,
-    role: PlayerRole
+    role: PlayerRole,
+    additionalInfo: JSON | null = null
   ): Promise<boolean> {
     try {
       const [result] = await pool.execute<ResultSetHeader>(NotificationQueries.createNotification, [
@@ -27,7 +28,8 @@ export class NotificationService {
         message,
         type,
         submittedBy,
-        NOTIFICATION_ROLE[role] || ''
+        NOTIFICATION_ROLE[role] || '',
+        additionalInfo || null
       ]);
 
       return result.affectedRows > 0;
@@ -42,7 +44,8 @@ export class NotificationService {
     message: string,
     type: NotificationType,
     submittedBy: number,
-    role: PlayerRole
+    role: PlayerRole,
+    additionalInfo: JSON | null = null
   ): Promise<boolean> {
     if (playerIds.length === 0) return true;
 
@@ -50,8 +53,8 @@ export class NotificationService {
     const values: any[] = [];
 
     playerIds.forEach((playerId) => {
-      placeholders.push("(?, ?, ?, ?, ?)");
-      values.push(playerId, message, type, submittedBy, NOTIFICATION_ROLE[role]);
+      placeholders.push("(?, ?, ?, ?, ?, ?)");
+      values.push(playerId, message, type, submittedBy, NOTIFICATION_ROLE[role], additionalInfo);
     });
 
     try {
@@ -147,7 +150,7 @@ export class NotificationService {
       message,
       notifType as NotificationType,
       submittedBy ? submittedBy : playerId,
-      ROLES.PLAYER as PlayerRole
+      ROLES.PLAYER as PlayerRole,
     );
 
     return true;

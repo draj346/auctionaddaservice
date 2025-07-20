@@ -1,8 +1,8 @@
 export const NotificationQueries = {
   createNotification: `INSERT INTO notifications 
-                        (playerId, message, type, submittedBy, role)
-                        VALUES (?, ?, ?, ?, ?)`,
-  getNotifications: `SELECT n.message, n.type, n.createdAt, n.role, isRead
+                        (playerId, message, type, submittedBy, role, customAttributes)
+                        VALUES (?, ?, ?, ?, ?, ?)`,
+  getNotifications: `SELECT n.message, n.type, n.createdAt, n.role, isRead, customAttributes
                       FROM notifications n
                       WHERE n.playerId = ?
                       AND (
@@ -28,6 +28,6 @@ export const NotificationQueries = {
 
 export const NotificationQueriesFn = {
  batchCreateNotification: (values: string) => `INSERT INTO notifications 
-                        (playerId, message, type, submittedBy, role)
+                        (playerId, message, type, submittedBy, role, customAttributes)
                         VALUES ${values}`,
 }

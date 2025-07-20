@@ -6,6 +6,7 @@ export interface INotification {
   type: NotificationType;
   role: string;
   isRead: boolean;
+  customAttributes: JSON | null;
 }
 
 export interface IPendingUpdate {

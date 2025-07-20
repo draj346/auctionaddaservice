@@ -1,6 +1,5 @@
 export const FileQueries = {
   findFileById: `SELECT * FROM files WHERE fileId = ?`,
-  findMultipleFilesByIds: `SELECT fileId, url FROM files WHERE fileId in (?)`,
   insertFile: `INSERT INTO files (name, path, url) VALUES (?, ?, ?)`,
   updateFile: `
     UPDATE files SET 
@@ -9,3 +8,7 @@ export const FileQueries = {
       url = ?
     WHERE fileId = ?`,
 };
+
+export const FileQueririesFn = {
+  getFilesByIds: (fileIds: number[]) => `SELECT fileId, url as path FROM files WHERE fileId IN (${fileIds.join(",")})`,
+}

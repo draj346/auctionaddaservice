@@ -10,12 +10,14 @@ export const AuctionQueries = {
                       maxPlayerPerTeam, 
                       minPlayerPerTeam,
                       playerId,
-                      code,
                       pointPerTeam,
                       baseBid,
-                      baseIncreaseBy
+                      baseIncreaseBy,
+                      isPaymentInCompanyAccount,
+                      qrCodeId,
+                      auctionRule
                   ) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                   ON DUPLICATE KEY UPDATE
                       imageId = VALUES(imageId),
                       name = VALUES(name),
@@ -27,18 +29,25 @@ export const AuctionQueries = {
                       minPlayerPerTeam = VALUES(minPlayerPerTeam),
                       pointPerTeam = VALUES(pointPerTeam),
                       baseBid = VALUES(baseBid),
+                      isPaymentInCompanyAccount = VALUES(isPaymentInCompanyAccount),
+                      qrCodeId = VALUES(qrCodeId),
+                      auctionRule = VALUES(auctionRule),
                       baseIncreaseBy = VALUES(baseIncreaseBy);`,
   checkAuctionPending: `SELECT count(*) as count from auctions where playerId = ? AND paymentStatus is False AND isActive is True`,
-  isOrganiser: `select count(*) as count from auctions where paymentStatus is true and playerId = ? and (isLive is false or (isLive is true and startDate <=CURDATE()))`,
-  getAuctionPlayerId: `SELECT playerId from auctions where auctionId = ? AND isActive is True AND isLive is False`,
-  getAuctions: `SELECT auctionId, imageId, name, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
+  isOrganiser: `select count(*) as count from auctions where paymentStatus is true and playerId = ? and isActive is true and (isLive is false or (isLive is true and startDate <=CURDATE()))`,
+  getAuctionPlayerId: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True AND isLive is False`,
+  isValidAuction: `SELECT count(*) as count from auctions where auctionId = ? AND playerId =? AND isActive is True`,
+  getAuctions: `SELECT auctionId, imageId, name, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
                 code, isLive, pointPerTeam, baseBid, baseIncreaseBy from auctions where isActive is True and playerId = ?`,
-  getAuctionDetails: `SELECT imageId, name, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
-                code, isLive, pointPerTeam, baseBid, baseIncreaseBy from auctions where isActive is True and auctionId = ?`,
-  getAuctionSearchByAdmin: `SELECT imageId, name, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
+  getAuctionDetails: `SELECT imageId, name, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
+                code, isLive, pointPerTeam, baseBid, baseIncreaseBy, isPaymentInCompanyAccount, qrCodeId, auctionRule as rule  from auctions where isActive is True and auctionId = ?`,
+  getAuctionSearchByAdmin: `SELECT auctionId, imageId, name, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
                 code, isLive, pointPerTeam, baseBid, baseIncreaseBy from auctions where 
                 code LIKE CONCAT('%', ?, '%') OR name LIKE CONCAT('%', ?, '%')`,
   deleteAuctionById: `CALL AuctionDeletion(?, ?, ?)`,
+  updateAuctionCode: `UPDATE auctions SET code = ? WHERE auctionId = ?`,
+  approveAuction: `UPDATE auctions SET paymentStatus = TRUE WHERE auctionId = ?`,
+  getAuctionName: `SELECT name, state, code, playerId from auctions where auctionId = ?`,
   updateCatergoryRule: `UPDATE auctions
                         SET defCategoryDisplayOrderId = ?,
                             players_selection_rule = ?,

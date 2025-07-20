@@ -7,13 +7,31 @@ export const upsetAuctionSchema = Joi.object<ICreateAuction>({
   name: Joi.string().trim().required(),
   state: Joi.string().trim().required(),
   district: Joi.string().trim().required(),
-  startDate: Joi.date().required(),
+  startDate: Joi.string()
+    .pattern(/^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$/)
+    .required()
+    .custom((value, helpers) => {
+      const [day, month, year] = value.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      
+      if (
+        date.getDate() !== day ||
+        date.getMonth() + 1 !== month ||
+        date.getFullYear() !== year
+      ) {
+        return helpers.error('date.invalid');
+      }
+      return date;
+    }, 'Date Validation'),
   startTime: Joi.string().trim().required().allow(null, ''),
   maxPlayerPerTeam: Joi.number().max(30).required(),
   minPlayerPerTeam: Joi.number().min(1).required().allow(null),
   pointPerTeam: Joi.number().min(1).max(9999999999).required(),
   baseBid: Joi.number().min(1).max(9999999).required(),
   baseIncreaseBy: Joi.number().min(1).max(999999).required(),
+  qrCodeId: Joi.number().required().allow(null),
+  isPaymentInCompanyAccount: Joi.bool().required().allow(null),
+  rule: Joi.string().trim().required().allow(null, ''),
 });
 
 export const auctionIdSchema = Joi.object<IAuctionAttributesIdsSchema>({

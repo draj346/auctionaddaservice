@@ -175,7 +175,16 @@ export class AuthController {
         const isOrganiser = await AuctionService.isOrganiser(playerInfo.playerId);
         if (!isOrganiser) {
           role = ROLES.PLAYER;
-          await RoleService.deleteRole(playerInfo.playerId);
+          const roleResult = await RoleService.deleteRole(playerInfo.playerId);
+          if (roleResult) {
+            NotificationService.createNotification(
+              playerInfo.playerId,
+              NotificationMessage.REMOVE_ROLE_FROM_ORGANISER,
+              NOTIFICATIONS.ROLE_UPDATED as NotificationType,
+              playerInfo.playerId,
+              ROLES.PLAYER,
+            );
+          }
         }
       }
       const tokenPayload = {

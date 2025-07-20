@@ -11,6 +11,7 @@ export const userUploadForAuctionSchema = Joi.object<AuctionFileData>({
   fileId: Joi.number().allow('', null).min(1).required(),
   auctionId: Joi.number().min(1).required(),
   image: Joi.binary().required(),
+  type: Joi.string().valid("logo", "qrcode").required(),
 });
 
 export const AddPlayersFile = Joi.object<ExcelFileData>({

@@ -8,6 +8,8 @@ import { RegistrationService } from "../services/registration.service";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionService } from "../services/auction.service";
+import { AuctionFileData } from "../types/file.types";
+import { AuctionsHelper } from "../helpers/auctions.helpers";
 
 const fileService = new FileService();
 const registrationService = new RegistrationService();
@@ -136,17 +138,20 @@ export class FileController {
             isNotFound: true,
           });
         }
-        const { fileId, auctionId } = req.body;
+        const { fileId, auctionId, type } = req.body as AuctionFileData;
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
         let playerId = req.userId;
+        let name = "", code = "";
 
         if (auctionId) {
-          const auctionPlayerId = await AuctionService.getAuctionPlayerId(auctionId);
-          if (!auctionPlayerId) {
+          const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+          if (!auctionInfo?.playerId) {
             return ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
           }
-          playerId = auctionPlayerId;
+          playerId = auctionInfo.playerId;
+          name = auctionInfo.name;
+          code = auctionInfo.code;
         }
 
         let result = null;
@@ -166,13 +171,31 @@ export class FileController {
           });
         }
         if (result) {
-          await NotificationService.createNotification(
-            playerId,
-            playerId === req.userId ? NotificationMessage.IMAGE_UPDATE_BY_SELF : NotificationMessage.IMAGE_UPDATE_BY_ELSE,
-            NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
-            req.userId,
-            req.role
-          );
+          if (fileId) {
+            if (type === "logo") {
+              await NotificationService.createNotification(
+                playerId,
+                playerId === req.userId
+                  ? NotificationMessage.AUCTION_IMAGE_UPDATE_BY_SELF
+                  : NotificationMessage.AUCTION_IMAGE_UPDATE_BY_ELSE,
+                NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
+                req.userId,
+                req.role,
+                AuctionsHelper.getNotificationJSON(name, "", code)
+              );
+            } else {
+              await NotificationService.createNotification(
+                playerId,
+                playerId === req.userId
+                  ? NotificationMessage.AUCTION_QRIMAGE_UPDATE_BY_SELF
+                  : NotificationMessage.AUCTION_QRIMAGE_UPDATE_BY_ELSE,
+                NOTIFICATIONS.IMAGE_UPDATE as NotificationType,
+                req.userId,
+                req.role,
+                AuctionsHelper.getNotificationJSON(name, "", code)
+              );
+            }
+          }
           return ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
         } else {
           return ApiResponse.error(res, "Upload failed", 200, {

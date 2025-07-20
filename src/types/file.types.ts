@@ -8,6 +8,7 @@ export interface AuctionFileData {
   image: string;
   auctionId: number;
   fileId?: number;
+  type: 'logo' | 'qrcode';
 }
 
 export interface FileSchemaProps {

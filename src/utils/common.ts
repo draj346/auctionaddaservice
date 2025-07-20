@@ -79,3 +79,8 @@ export const getChangedData = (original: Record<string, any>, updated: Record<st
     updatedData: updatedData as unknown as JSON
   };
 };
+
+export const toMySQLDate = (dateString: string): string => {
+  const [day, month, year] = dateString.split('-');
+  return `${year}-${month}-${day}`;
+};

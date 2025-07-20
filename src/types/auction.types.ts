@@ -4,7 +4,7 @@ export interface ICreateAuction {
   name: string;
   state: string;
   district: string;
-  startDate: Date;
+  startDate: string;
   startTime: string;
   maxPlayerPerTeam: number;
   minPlayerPerTeam: number;
@@ -13,6 +13,9 @@ export interface ICreateAuction {
   pointPerTeam: number;
   baseBid: number;
   baseIncreaseBy: number;
+  qrCodeId: number;
+  isPaymentInCompanyAccount: boolean;
+  rule: string;
 }
 
 export interface IAuctionAttributesIdsSchema {
@@ -26,13 +29,13 @@ export interface IAuctionAttributesIdsSchema {
 
 export interface IAuctionDetails {
   auctionId?: number;
-  imageId: number;
-  path?: string;
+  imageId: number | null;
+  imagePath?: string;
   name: string;
   state?: string;
   district: string;
   paymentStatus: boolean;
-  startDate: Date;
+  startDate: string;
   startTime: string;
   maxPlayerPerTeam: number;
   minPlayerPerTeam?: number;
@@ -42,6 +45,11 @@ export interface IAuctionDetails {
   baseBid: number;
   baseIncreaseBy: number;
   isActive?: boolean;
+  qrCodeId: number | null;
+  qrCodePath?: string;
+  isPaymentInCompanyAccount: boolean;
+  rule: string;
+  playerId?: number;
 }
 
 export interface ICategoryRule {
@@ -133,6 +141,14 @@ export interface IAuctionStoreProcedureResponse {
   status: boolean;
   isLive?: boolean;
   isAccessDenied?: boolean;
+  isNotFound?: boolean;
+  isLocked?: boolean;
+  imagePath?: string;
+  qrCodePath?: string;
+  playerId?: number;
+  name?: string;
+  state?: string;
+  code?: string;
 }
 
 export interface IAuctionErrors {
@@ -141,4 +157,10 @@ export interface IAuctionErrors {
     isError?: boolean;
     isNotFound?: boolean;
     isValidationFailed?: boolean;
+}
+
+export interface IAuctionPlayerIdWithName {
+  playerId: number;
+  name: string
+  code: string;
 }

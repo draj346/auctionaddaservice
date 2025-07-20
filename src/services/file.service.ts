@@ -1,24 +1,18 @@
 import pool from "../config/db.config";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 import fs from "fs/promises";
-import { FileQueries } from "../queries/file.queries";
+import { FileQueries, FileQueririesFn } from "../queries/file.queries";
 import { FilePathSchema, FileSchemaProps } from "../types/file.types";
 
 export class FileService {
   async uploadFile(data: FileSchemaProps): Promise<number> {
-    const [result] = await pool.execute<ResultSetHeader>(
-      FileQueries.insertFile,
-      [data.name, data.path, data.url]
-    );
+    const [result] = await pool.execute<ResultSetHeader>(FileQueries.insertFile, [data.name, data.path, data.url]);
 
     return result.insertId;
   }
 
   async getFile(fileId: number): Promise<FileSchemaProps | null> {
-    const [result] = await pool.execute<RowDataPacket[]>(
-      FileQueries.findFileById,
-      [fileId]
-    );
+    const [result] = await pool.execute<RowDataPacket[]>(FileQueries.findFileById, [fileId]);
 
     if (result.length > 0) {
       return result[0] as FileSchemaProps;
@@ -33,11 +27,13 @@ export class FileService {
       if (existing) {
         this.deleteUploadedFile(existing.path);
       }
-       const [result] = await pool.execute<ResultSetHeader>(
-          FileQueries.updateFile,
-          [data.name, data.path, data.url, data.fileId]
-        );
-        return result.affectedRows === 1 ? data.fileId : 0;
+      const [result] = await pool.execute<ResultSetHeader>(FileQueries.updateFile, [
+        data.name,
+        data.path,
+        data.url,
+        data.fileId,
+      ]);
+      return result.affectedRows === 1 ? data.fileId : 0;
     } else {
       return this.uploadFile(data);
     }
@@ -53,13 +49,10 @@ export class FileService {
   }
 
   async getFiles(fileId: number[]): Promise<FilePathSchema[] | null> {
-    const [result] = await pool.execute<RowDataPacket[]>(
-      FileQueries.findMultipleFilesByIds,
-      [fileId]
-    );
+    const [result] = await pool.execute<RowDataPacket[]>(FileQueririesFn.getFilesByIds(fileId));
 
     if (result.length > 0) {
-      return result[0] as FilePathSchema[];
+      return result as FilePathSchema[];
     }
 
     return null;

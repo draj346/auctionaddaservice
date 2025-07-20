@@ -1,14 +1,22 @@
 export class AuctionsHelper {
-    static generateAuctionCode(playerId: number, name: string, role: string ): string {
-    const rand1 = Math.floor(Math.random() * 7) + 3;
-    const rand2 = Math.floor(Math.random() * 7) + 3;
-    const multiplier = rand1 * 10 + rand2;
+  static generateAuctionCode(auctionId: number, name: string, role: string): string {
+    const nameInitial = name[Math.floor(Math.random() * name.length)].toUpperCase();
+    const secondNameInitial = name[Math.floor(Math.random() * name.length)].toUpperCase();
+    const roleInitial = role[Math.floor(Math.random() * role.length)].toUpperCase();
+    return roleInitial + nameInitial + auctionId.toString() + secondNameInitial;
+  }
 
-    const product = playerId * multiplier;
-    
-    const nameInitial = name.charAt(0).toUpperCase();
-    const roleInitial = role.charAt(0).toUpperCase();
-
-    return nameInitial + product.toString() + roleInitial;
-}
+  static getNotificationJSON(name: string, state?: string, code?: string): JSON {
+    const result: { name?: string; state?: string; code?: string } = {};
+    if (name) {
+      result.name = name;
+    }
+    if (state) {
+      result.state = state;
+    }
+    if (code) {
+      result.code = code;
+    }
+    return result as unknown as JSON;
+  }
 }
