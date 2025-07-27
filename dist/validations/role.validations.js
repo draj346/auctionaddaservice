@@ -9,19 +9,18 @@ const withMeta = (schema, meta) => {
     return schema.meta({ __customMeta: meta });
 };
 exports.playerIdSchema = joi_1.default.object({
-    playerId: joi_1.default.number().integer().min(10001).required().messages({
+    playerId: joi_1.default.number().integer().min(1).required().messages({
         "number.base": "Player ID must be a number",
         "number.integer": "Player ID must be an integer",
-        "number.min": "Player ID must be at least 10001",
+        "number.min": "Player ID must be at least 1",
         "any.required": "Player ID is required",
     }),
-    // { isValidationFailed: true }
 });
 exports.playerIdsSchema = joi_1.default.object({
     playerIds: joi_1.default.array()
         .items(joi_1.default.number()
         .integer()
-        .min(10001)
+        .min(1)
         .required()
         .messages({
         'number.base': 'Player ID must be a number',
@@ -40,7 +39,7 @@ exports.playerIdsOptionalSchema = joi_1.default.object({
     playerIds: joi_1.default.array()
         .items(joi_1.default.number()
         .integer()
-        .min(10001)
+        .min(1)
         .messages({
         'number.base': 'Player ID must be a number',
         'number.integer': 'Player ID must be an integer',

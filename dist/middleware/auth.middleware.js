@@ -20,6 +20,9 @@ const authMiddleware = async (req, res, next) => {
         }
         req.userId = decoded.playerId;
         req.role = decoded.role;
+        req.email = decoded.email;
+        req.mobile = decoded.mobile;
+        req.name = decoded.name;
         next();
     }
     catch (err) {

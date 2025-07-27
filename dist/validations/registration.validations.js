@@ -8,10 +8,11 @@ const joi_1 = __importDefault(require("joi"));
 exports.initialRegistrationSchema = joi_1.default.object({
     name: joi_1.default.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
     mobile: joi_1.default.string().trim().pattern(/^[5-9][0-9]{9}$/).required(),
-    email: joi_1.default.string().trim().email().allow('').required()
+    email: joi_1.default.string().trim().email().allow('').required(),
+    state: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+    district: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
 });
 exports.updateProfileSchema = joi_1.default.object({
-    name: joi_1.default.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
     playerId: joi_1.default.number().required().min(1),
     jerseyNumber: joi_1.default.string()
         .pattern(/^[0-9]{1,6}$/)
@@ -36,7 +37,8 @@ exports.updateProfileSchema = joi_1.default.object({
     willJoinAnyOwner: joi_1.default.boolean().allow('', null).optional(),
 });
 exports.updateProfileByRoleSchema = joi_1.default.object({
-    name: joi_1.default.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
+    state: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+    district: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
     jerseyNumber: joi_1.default.string()
         .pattern(/^[0-9]{1,6}$/)
         .allow('', null)
@@ -63,6 +65,8 @@ exports.addProfileSchema = joi_1.default.object({
     name: joi_1.default.string().trim().pattern(/^[\p{L}\s]+$/u).required(),
     mobile: joi_1.default.string().trim().pattern(/^[5-9][0-9]{9}$/).required(),
     email: joi_1.default.string().trim().email().allow('').required(),
+    state: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
+    district: joi_1.default.string().trim().pattern(/^[\p{L}\d\s().-]+$/u).allow('', null).optional(),
     jerseyNumber: joi_1.default.string()
         .pattern(/^[0-9]{1,6}$/)
         .allow('', null)

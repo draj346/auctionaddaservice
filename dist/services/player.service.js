@@ -7,11 +7,11 @@ exports.PlayerService = void 0;
 const db_config_1 = __importDefault(require("../config/db.config"));
 const player_queries_1 = require("../queries/player.queries");
 class PlayerService {
-    async getPlayers(role, userId, page = 1, limit, search = "", owner = "all", approved = "all", sort, isActive = true) {
+    async getPlayers(role, userId, page = 1, limit, search = "", approved = "all", sort, active) {
         const offset = (page - 1) * limit;
         const [result, totalResult] = await Promise.all([
-            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayers(role, isActive, userId, search, owner, approved, offset, limit, sort)),
-            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersCount(role, isActive, userId, search, owner, approved)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayers(role, userId, search, approved, offset, limit, sort, active)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersCount(role, userId, search, approved, active)),
         ]);
         const totalPlayers = totalResult[0][0].total;
         const hasMore = offset + limit < totalPlayers;
@@ -21,14 +21,32 @@ class PlayerService {
             hasMore
         };
     }
-    async getPlayerForExport(playerIds) {
-        const query = player_queries_1.PlayerQueries.getPlayerForExport(playerIds);
+    async getAdmins(page = 1, limit, search = "") {
+        const offset = (page - 1) * limit;
+        const [result, totalResult] = await Promise.all([
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getAdmins(search, offset, limit)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getAdminsCount(search)),
+        ]);
+        const totalPlayers = totalResult[0][0].total;
+        const hasMore = offset + limit < totalPlayers;
+        return {
+            players: result[0].length > 0 ? result[0] : [],
+            total: totalPlayers,
+            hasMore
+        };
+    }
+    async getPlayerForExport(role, playerIds) {
+        const query = player_queries_1.PlayerQueries.getPlayerForExport(role, playerIds);
         const [result] = await db_config_1.default.execute(query);
         return result.length > 0 ? result : [];
     }
-    async getPlayerById(req, playerId) {
-        const [result] = await db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayerById(req.role, playerId), [req.userId]);
-        return result.length > 0 ? result : [];
+    async getPlayerById(role, playerId, isActive, userId) {
+        const [result] = await db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayerById(role, playerId, isActive, userId), [userId]);
+        return result.length > 0 ? result[0] : null;
+    }
+    async getImageUrl(fileId) {
+        const [result] = await db_config_1.default.execute(player_queries_1.publicPlayerQueries.getFileUrl, [fileId]);
+        return result.length > 0 ? result[0].url : '';
     }
 }
 exports.PlayerService = PlayerService;

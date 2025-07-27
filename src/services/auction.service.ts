@@ -17,7 +17,6 @@ import {
 } from "../types/auction.types";
 import { AuctionQueries } from "../queries/auction.queries";
 import { FREE_AUCTION_CREATE_LIMIT } from "../config/env";
-import { json } from "stream/consumers";
 
 export class AuctionService {
   public static async upsetAuction(auction: ICreateAuction): Promise<number> {

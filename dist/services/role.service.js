@@ -18,24 +18,39 @@ class RoleService {
         }
         return role;
     }
-    async createAdmin(playerId) {
-        const [adminRoles] = await db_config_1.default.execute(role_queries_1.RoleQueries.getAdminRole);
-        if (adminRoles.length === 0) {
+    static async createAdmin(playerId) {
+        const adminResult = await this.createRole(playerId, roles_constants_1.ROLES.ADMIN);
+        if (adminResult) {
+            await this.approvePlayers([playerId]);
+        }
+        return adminResult;
+    }
+    static async createRole(playerId, roleName) {
+        const [result] = await db_config_1.default.execute(role_queries_1.RoleQueries.getRoleIdByName, [roleName]);
+        if (result.length === 0) {
             return false;
         }
-        const adminRoleId = adminRoles[0].roleId;
-        const [result1] = await db_config_1.default.execute(role_queries_1.RoleQueries.setRole, [
+        const roleId = result[0].roleId;
+        await this.deleteRole(playerId);
+        const [userRoleResult] = await db_config_1.default.execute(role_queries_1.RoleQueries.setRole, [
             playerId,
-            adminRoleId,
+            roleId,
         ]);
-        const [result] = await db_config_1.default.execute(role_queries_1.RoleQueries.updatePlayerForAdmin, [playerId]);
-        return result.affectedRows > 0;
+        return userRoleResult.affectedRows > 0;
     }
-    async deleteRole(playerId) {
+    static async createOrganiser(playerId) {
+        const result = await this.createRole(playerId, roles_constants_1.ROLES.ORGANISER);
+        return result;
+    }
+    static async createOwner(playerId) {
+        const result = await this.createRole(playerId, roles_constants_1.ROLES.OWNER);
+        return result;
+    }
+    static async deleteRole(playerId) {
         const [result] = await db_config_1.default.execute(role_queries_1.RoleQueries.deleteRole, [playerId]);
         return result.affectedRows > 0;
     }
-    async approvePlayers(playerIds) {
+    static async approvePlayers(playerIds) {
         const [result] = await db_config_1.default.execute(player_queries_1.PlayerQueries.approvePlayer(playerIds));
         return result.affectedRows > 0;
     }
@@ -67,6 +82,26 @@ class RoleService {
     static async hasRoleAccessOnly(userRole, accessPlayerId) {
         const accessRole = (await this.getUserRole(accessPlayerId));
         return this.hasRoleAccess(userRole, accessRole);
+    }
+    static async isSelfOrAdminOrAbove(userRole, playerId, accessPlayerId, self = true) {
+        const accessRole = (await this.getUserRole(accessPlayerId));
+        if (roles_helpers_1.RoleHelper.isSuperAdmin(userRole)) {
+            return true;
+        }
+        if (roles_helpers_1.RoleHelper.isAdmin(userRole)) {
+            return !roles_helpers_1.RoleHelper.isSuperAdmin(accessRole);
+        }
+        return self && playerId * 1 === accessPlayerId * 1;
+    }
+    static async isAdminOrAboveForDelete(userRole, accessPlayerId) {
+        const accessRole = (await this.getUserRole(accessPlayerId));
+        if (roles_helpers_1.RoleHelper.isSuperAdmin(userRole)) {
+            return true;
+        }
+        if (roles_helpers_1.RoleHelper.isAdmin(userRole)) {
+            return !roles_helpers_1.RoleHelper.isAdminAndAbove(accessRole);
+        }
+        return false;
     }
 }
 exports.RoleService = RoleService;

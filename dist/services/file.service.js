@@ -25,7 +25,12 @@ class FileService {
             if (existing) {
                 this.deleteUploadedFile(existing.path);
             }
-            const [result] = await db_config_1.default.execute(file_queries_1.FileQueries.updateFile, [data.name, data.path, data.url, data.fileId]);
+            const [result] = await db_config_1.default.execute(file_queries_1.FileQueries.updateFile, [
+                data.name,
+                data.path,
+                data.url,
+                data.fileId,
+            ]);
             return result.affectedRows === 1 ? data.fileId : 0;
         }
         else {
@@ -40,6 +45,13 @@ class FileService {
         catch (error) {
             console.error("Error deleting file:", error);
         }
+    }
+    async getFiles(fileId) {
+        const [result] = await db_config_1.default.execute(file_queries_1.FileQueririesFn.getFilesByIds(fileId));
+        if (result.length > 0) {
+            return result;
+        }
+        return null;
     }
 }
 exports.FileService = FileService;

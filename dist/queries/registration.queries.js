@@ -1,34 +1,46 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.RegistrationQueries = void 0;
+exports.MultiUserRegistrationQueries = exports.RegistrationQueries = void 0;
 exports.RegistrationQueries = {
+    findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ? AND name = ?`,
+    findFullMatchWithNull: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email is NULL AND name = ?`,
     findPlayerByMobile: `SELECT playerId, email, name, isSubmitted FROM players WHERE mobile = ?`,
     findPlayerByEmail: `SELECT playerId, mobile, name, isSubmitted FROM players WHERE email = ?`,
-    findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ? AND name = ?`,
-    insertPlayer: `INSERT INTO players (name, mobile, email) VALUES (?, ?, ?)`,
-    updatePlayer: `
-    UPDATE players SET 
-      name = ?,
-      jerseyNumber = ?,
-      tShirtSize = ?,
-      lowerSize = ?,
-      hasCricheroesProfile = ?,
-      isPaidPlayer = ?,
-      pricePerMatch = ?,
-      willJoinAnyOwner = ?,
-      image = ?,
-      isSubmitted = ?
-    WHERE playerId = ?`,
-    createPlayer: `INSERT INTO players (name, mobile, email, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
-                    isPaidPlayer, pricePerMatch, willJoinAnyOwner, image, isSubmitted) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    insertPlayer: `INSERT INTO players (name, mobile, email, state, district) VALUES (?, ?, ?, ?, ?)`,
+    findNotRegisteredUserById: `SELECT count(*) as count from players WHERE playerId = ? AND isSubmitted = 0`,
+    addPlayerInformation: `INSERT INTO player_informations (playerId, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
+                    isPaidPlayer, pricePerMatch, willJoinAnyOwner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    setPlayerSubmitted: ` UPDATE players SET isSubmitted = ? WHERE playerId = ?`,
+    deletePlayerInformation: `DELETE FROM player_informations where playerId = ?`,
+    updateImage: `INSERT INTO player_images (playerId, imageId) 
+                VALUES (?, ?)
+                ON DUPLICATE KEY UPDATE 
+                  imageId = ?;`,
+    createPlayer: `INSERT INTO players (name, mobile, email, state, district, isSubmitted) VALUES (?, ?, ?, ?, ?, ?)`,
+    updatePlayerInformation: `INSERT INTO player_informations (playerId, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
+                    isPaidPlayer, pricePerMatch, willJoinAnyOwner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)  
+                    ON DUPLICATE KEY UPDATE 
+                      jerseyNumber = VALUES(jerseyNumber),
+                      tShirtSize = VALUES(tShirtSize),
+                      lowerSize = VALUES(lowerSize),
+                      hasCricheroesProfile = VALUES(hasCricheroesProfile),
+                      isPaidPlayer = VALUES(isPaidPlayer),
+                      pricePerMatch = VALUES(pricePerMatch),
+                      willJoinAnyOwner = VALUES(willJoinAnyOwner)`,
+    updatePlayerAddress: `UPDATE players SET isSubmitted = 1, state=?, district=?  WHERE playerId = ?`,
     deletePlayer: `UPDATE players SET isActive = 0 WHERE playerId = ?`,
-    deactivatePlayers(ids) {
+};
+exports.MultiUserRegistrationQueries = {
+    deactivatePlayers: (ids) => {
         return `UPDATE players SET isActive = 0 WHERE playerId IN (${ids})`;
     },
-    updateToNonPlayers(ids) {
+    activatePlayers: (ids) => {
+        return `UPDATE players SET isActive = 1 WHERE playerId IN (${ids})`;
+    },
+    updateToNonPlayers: (ids) => {
         return `UPDATE players SET isNonPlayer = 1 WHERE playerId IN (${ids})`;
     },
-    updateToPlayers(ids) {
+    updateToPlayers: (ids) => {
         return `UPDATE players SET isNonPlayer = 0 WHERE playerId IN (${ids})`;
     },
 };

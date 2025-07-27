@@ -40,7 +40,12 @@ const registration_service_1 = require("../services/registration.service");
 const role_service_1 = require("../services/role.service");
 const multerConfig_1 = require("../utils/multerConfig");
 const XLSX = __importStar(require("xlsx"));
+const notification_service_1 = require("../services/notification.service");
+const notification_constants_1 = require("../constants/notification.constants");
+const player_service_1 = require("../services/player.service");
+const common_1 = require("../utils/common");
 const registrationService = new registration_service_1.RegistrationService();
+const playerService = new player_service_1.PlayerService();
 class RegistrationController {
 }
 exports.RegistrationController = RegistrationController;
@@ -52,15 +57,23 @@ RegistrationController.initialRegistration = async (req, res) => {
         apiResponse_1.ApiResponse.success(res, { ...playerInfo }, 200, playerInfo.playerId ? "Registration initiated successfully" : "Something went happen. Please try again.");
     }
     catch (error) {
+        console.log("eror");
         console.log(error);
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
     }
 };
-RegistrationController.updatePlayers = async (req, res) => {
+RegistrationController.addPlayerInformation = async (req, res) => {
     try {
         const data = req.body;
-        const success = await registrationService.updateProfile(data);
+        const isValidUser = await registrationService.isUserProfileSubmitted(data.playerId);
+        if (!isValidUser) {
+            apiResponse_1.ApiResponse.error(res, "Player not found or update failed", 400, {
+                isRegistered: true,
+            });
+        }
+        const success = await registrationService.addPlayerInformation(data);
         if (success) {
+            notification_service_1.NotificationService.createNotification(data.playerId, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_SELF, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, data.playerId, req.role);
             apiResponse_1.ApiResponse.success(res, null, 200, "Registration completed successfully");
         }
         else {
@@ -77,7 +90,8 @@ RegistrationController.addPlayers = async (req, res) => {
         const data = req.body;
         const result = await registrationService.createProfile(data);
         if (result && result.playerId) {
-            apiResponse_1.ApiResponse.success(res, null, 200, "Player added successfully");
+            apiResponse_1.ApiResponse.success(res, { ...result }, 200, "Player added successfully");
+            notification_service_1.NotificationService.createNotification(result.playerId, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, req.userId, req.role);
         }
         else {
             apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 200, result, { isError: true });
@@ -94,15 +108,34 @@ RegistrationController.updatePlayersByRole = async (req, res) => {
     try {
         const data = req.body;
         data.playerId = parseInt(req.params.playerId);
-        const hasAccess = await role_service_1.RoleService.hasAccess(req.role, req.userId, data.playerId);
+        const hasAccess = await role_service_1.RoleService.isSelfOrAdminOrAbove(req.role, req.userId, data.playerId);
         if (!hasAccess) {
             return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
                 isAccessDenied: true,
             });
         }
+        let previousInfo = null;
+        if (req.userId !== data.playerId) {
+            previousInfo = await playerService.getPlayerById(req.role, data.playerId, true, req.userId);
+        }
         const success = await registrationService.updateProfile(data);
         if (success) {
-            apiResponse_1.ApiResponse.success(res, null, 200, "Profile updated successfully");
+            const message = req.userId === data.playerId
+                ? notification_constants_1.NotificationMessage.ACCOUNT_UPDATE_BY_SELF
+                : notification_constants_1.NotificationMessage.ACCOUNT_UPDATE_BY_ELSE;
+            notification_service_1.NotificationService.createNotification(data.playerId, message, notification_constants_1.NOTIFICATIONS.PROFILE_UPDATE, req.userId, req.role);
+            if (req.userId !== data.playerId) {
+                if (previousInfo) {
+                    const updatedInfo = { ...data };
+                    if (data.image) {
+                        const image = await playerService.getImageUrl(data.image);
+                        updatedInfo.image = image;
+                    }
+                    const { previousData, updatedData } = (0, common_1.getChangedData)(previousInfo, updatedInfo);
+                    notification_service_1.NotificationService.createPendingUpdate(data.playerId, req.userId, updatedData, notification_constants_1.NotificationMessage.APPROVAL_REQUEST, req.role, notification_constants_1.NOTIFICATIONS.APPROVAL_REQUEST, previousData);
+                }
+            }
+            apiResponse_1.ApiResponse.success(res, { playerId: data.playerId }, 200, "Profile updated successfully");
         }
         else {
             apiResponse_1.ApiResponse.error(res, "Player not found or update failed", 404, {
@@ -120,8 +153,8 @@ RegistrationController.updatePlayersByRole = async (req, res) => {
 RegistrationController.deletePlayer = async (req, res) => {
     try {
         const playerId = parseInt(req.params.playerId);
-        const hasAccess = await role_service_1.RoleService.hasAccess(req.role, req.userId, playerId);
-        if (!hasAccess || req.userId * 1 === playerId) {
+        const hasAccess = await role_service_1.RoleService.isAdminOrAboveForDelete(req.role, playerId);
+        if (!hasAccess) {
             return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
                 isAccessDenied: true,
             });
@@ -147,13 +180,11 @@ RegistrationController.deactivatePlayers = async (req, res) => {
     try {
         const data = req.body;
         const accessChecks = data.playerIds.map(async (playerId) => {
-            const hasSameLevelAccess = await role_service_1.RoleService.hasSameLevelAccess(req.role, playerId);
-            return { playerId, allowed: !hasSameLevelAccess };
+            const hasAccess = await role_service_1.RoleService.isAdminOrAboveForDelete(req.role, playerId);
+            return { playerId, allowed: hasAccess && playerId != req.userId };
         });
         const accessResults = await Promise.all(accessChecks);
-        const allowedPlayerIds = accessResults
-            .filter((result) => result.allowed)
-            .map((result) => result.playerId);
+        const allowedPlayerIds = accessResults.filter((result) => result.allowed).map((result) => result.playerId);
         if (allowedPlayerIds.length === 0) {
             return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
                 isAccessDenied: true,
@@ -174,6 +205,35 @@ RegistrationController.deactivatePlayers = async (req, res) => {
         return apiResponse_1.ApiResponse.error(res, "Something went wrong. Please try again.", 500, { isError: true });
     }
 };
+RegistrationController.activatePlayers = async (req, res) => {
+    try {
+        const data = req.body;
+        const accessChecks = data.playerIds.map(async (playerId) => {
+            const hasAccess = await role_service_1.RoleService.isAdminOrAboveForDelete(req.role, playerId);
+            return { playerId, allowed: hasAccess && playerId != req.userId };
+        });
+        const accessResults = await Promise.all(accessChecks);
+        const allowedPlayerIds = accessResults.filter((result) => result.allowed).map((result) => result.playerId);
+        if (allowedPlayerIds.length === 0) {
+            return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
+                isAccessDenied: true,
+            });
+        }
+        const success = await registrationService.activatePlayers(allowedPlayerIds);
+        if (!success) {
+            return apiResponse_1.ApiResponse.error(res, "Players not found or update failed", 404, { isUpdateFailed: true });
+        }
+        if (data.playerIds.length !== allowedPlayerIds.length) {
+            const skippedPlayerIds = data.playerIds.filter((id) => !allowedPlayerIds.includes(id));
+            return apiResponse_1.ApiResponse.success(res, { skippedPlayerIds }, 200, "Some profiles activated successfully");
+        }
+        return apiResponse_1.ApiResponse.success(res, { skippedPlayerIds: [] }, 200, "Profiles activated successfully");
+    }
+    catch (error) {
+        console.error("activation error:", error);
+        return apiResponse_1.ApiResponse.error(res, "Something went wrong. Please try again.", 500, { isError: true });
+    }
+};
 RegistrationController.AddMultiplePlayers = async (req, res) => {
     try {
         await new Promise((resolve, reject) => {
@@ -184,19 +244,18 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
             });
         });
         if (!req.file) {
-            return apiResponse_1.ApiResponse.error(res, "No file uploaded", 400);
+            return apiResponse_1.ApiResponse.error(res, "No file uploaded", 400, { isUpdateFailed: true });
         }
         if (!req.file.buffer || req.file.buffer.length === 0) {
-            return apiResponse_1.ApiResponse.error(res, "Empty file buffer", 400);
+            return apiResponse_1.ApiResponse.error(res, "Empty file buffer", 400, { isNotFound: true });
         }
         const workbook = XLSX.read(req.file.buffer, {
             type: "buffer",
             cellDates: true,
             sheetStubs: true,
         });
-        if (!workbook.SheetNames.length ||
-            !workbook.Sheets[workbook.SheetNames[0]]) {
-            return apiResponse_1.ApiResponse.error(res, "No worksheets found in Excel file", 400);
+        if (!workbook.SheetNames.length || !workbook.Sheets[workbook.SheetNames[0]]) {
+            return apiResponse_1.ApiResponse.error(res, "No worksheets found in Excel file", 400, { isNotFound: true });
         }
         const sheetName = workbook.SheetNames[0];
         const worksheet = workbook.Sheets[sheetName];
@@ -205,6 +264,8 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
                 "Full Name",
                 "Mobile",
                 "Email",
+                "State",
+                "District",
                 "Jersey Number",
                 "T-Shirt Size",
                 "Lower Size",
@@ -216,13 +277,17 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
             range: 1,
             defval: null,
         });
-        if (!worksheet["K1"] || worksheet["K1"].v !== "Result") {
-            XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "K1" });
+        if (!worksheet["M1"] || worksheet["M1"].v !== "Result") {
+            XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "M1" });
         }
+        const allowedPlayerIds = [];
         const processedUsers = await Promise.all(users.map(async (user, index) => {
             const row = index + 2;
             try {
-                await registrationService.createProfileForExcel(user);
+                const response = await registrationService.createProfileForExcel(user);
+                if (response.playerId) {
+                    allowedPlayerIds.push(response.playerId);
+                }
                 return { ...user, Result: "Success", Row: row };
             }
             catch (error) {
@@ -235,9 +300,10 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
         }));
         processedUsers.forEach((user) => {
             XLSX.utils.sheet_add_aoa(worksheet, [[user.Result]], {
-                origin: `K${user.Row}`,
+                origin: `M${user.Row}`,
             });
         });
+        notification_service_1.NotificationService.batchCreateNotification(allowedPlayerIds, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, req.userId, req.role);
         const updatedBuffer = XLSX.write(workbook, {
             type: "buffer",
             bookType: "xlsx",
@@ -248,20 +314,18 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
     }
     catch (error) {
         console.log(error);
-        apiResponse_1.ApiResponse.error(res, "Uploading failed. Please try again.");
+        apiResponse_1.ApiResponse.error(res, "Uploading failed. Please try again.", 500, { isError: true });
     }
 };
 RegistrationController.updateToNonPlayers = async (req, res) => {
     try {
         const data = req.body;
         const accessChecks = data.playerIds.map(async (playerId) => {
-            const hasSameLevelAccess = await role_service_1.RoleService.hasSameLevelAccess(req.role, playerId);
-            return { playerId, allowed: !hasSameLevelAccess };
+            const hasAccess = await role_service_1.RoleService.isAdminOrAboveForDelete(req.role, playerId);
+            return { playerId, allowed: hasAccess && playerId != req.userId };
         });
         const accessResults = await Promise.all(accessChecks);
-        const allowedPlayerIds = accessResults
-            .filter((result) => result.allowed)
-            .map((result) => result.playerId);
+        const allowedPlayerIds = accessResults.filter((result) => result.allowed).map((result) => result.playerId);
         if (allowedPlayerIds.length === 0) {
             return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
                 isAccessDenied: true,
@@ -271,6 +335,7 @@ RegistrationController.updateToNonPlayers = async (req, res) => {
         if (!success) {
             return apiResponse_1.ApiResponse.error(res, "Players not found or update failed", 404, { isUpdateFailed: true });
         }
+        notification_service_1.NotificationService.batchCreateNotification(allowedPlayerIds, notification_constants_1.NotificationMessage.STATUS_CHANGE_TO_NON_PLAYER, notification_constants_1.NOTIFICATIONS.PROFILE_UPDATE, req.userId, req.role);
         if (data.playerIds.length !== allowedPlayerIds.length) {
             const skippedPlayerIds = data.playerIds.filter((id) => !allowedPlayerIds.includes(id));
             return apiResponse_1.ApiResponse.success(res, { skippedPlayerIds }, 200, "Some profiles updated to Non Players successfully");
@@ -286,13 +351,11 @@ RegistrationController.updateToPlayers = async (req, res) => {
     try {
         const data = req.body;
         const accessChecks = data.playerIds.map(async (playerId) => {
-            const hasSameLevelAccess = await role_service_1.RoleService.hasSameLevelAccess(req.role, playerId);
-            return { playerId, allowed: !hasSameLevelAccess };
+            const hasAccess = await role_service_1.RoleService.isAdminOrAboveForDelete(req.role, playerId);
+            return { playerId, allowed: hasAccess && playerId != req.userId };
         });
         const accessResults = await Promise.all(accessChecks);
-        const allowedPlayerIds = accessResults
-            .filter((result) => result.allowed)
-            .map((result) => result.playerId);
+        const allowedPlayerIds = accessResults.filter((result) => result.allowed).map((result) => result.playerId);
         if (allowedPlayerIds.length === 0) {
             return apiResponse_1.ApiResponse.error(res, "Access Denied", 403, {
                 isAccessDenied: true,
@@ -302,6 +365,7 @@ RegistrationController.updateToPlayers = async (req, res) => {
         if (!success) {
             return apiResponse_1.ApiResponse.error(res, "Players not found or update failed", 404, { isUpdateFailed: true });
         }
+        notification_service_1.NotificationService.batchCreateNotification(allowedPlayerIds, notification_constants_1.NotificationMessage.STATUS_CHANGE_TO_PLAYER, notification_constants_1.NOTIFICATIONS.PROFILE_UPDATE, req.userId, req.role);
         if (data.playerIds.length !== allowedPlayerIds.length) {
             const skippedPlayerIds = data.playerIds.filter((id) => !allowedPlayerIds.includes(id));
             return apiResponse_1.ApiResponse.success(res, { skippedPlayerIds }, 200, "Some profiles updated to Players successfully");

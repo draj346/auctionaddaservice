@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.OTP_EXPIRY_MINUTES = exports.FILE_UPLOAD_FOLDER = exports.FILE_UPLOAD_LOCATION = exports.JWT_SECRET = exports.DB_PORT = exports.DB_NAME = exports.DB_PASSWORD = exports.DB_USER = exports.DB_HOST = exports.PORT = void 0;
+exports.FREE_AUCTION_CREATE_LIMIT = exports.OTP_EXPIRY_MINUTES = exports.FILE_UPLOAD_FOLDER = exports.FILE_UPLOAD_LOCATION = exports.JWT_SECRET = exports.DB_PORT = exports.DB_NAME = exports.DB_PASSWORD = exports.DB_USER = exports.DB_HOST = exports.PORT = void 0;
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 exports.PORT = process.env.PORT ? parseInt(process.env.PORT) : 3000;
@@ -18,3 +18,6 @@ exports.FILE_UPLOAD_FOLDER = process.env.FILE_UPLOAD_FOLDER;
 exports.OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES
     ? parseInt(process.env.OTP_EXPIRY_MINUTES)
     : 2;
+exports.FREE_AUCTION_CREATE_LIMIT = process.env.FREE_AUCTION_CREATE_LIMIT
+    ? parseInt(process.env.FREE_AUCTION_CREATE_LIMIT)
+    : 1;

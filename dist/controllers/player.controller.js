@@ -49,11 +49,11 @@ PlayerController.getPlayers = async (req, res) => {
         const data = req.query;
         const page = data.page || 1;
         const search = data.search || "";
-        const owner = data.owner || "all";
         const approved = data.approved || "all";
+        const active = data.active || "all";
         const sort = data.sort || "";
         const limit = 100;
-        const { players, total, hasMore } = await playerService.getPlayers(req.role, req.userId, page, limit, search, owner, approved, sort);
+        const { players, total, hasMore } = await playerService.getPlayers(req.role, req.userId, page, limit, search, approved, sort, active);
         apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     }
     catch (error) {
@@ -63,33 +63,56 @@ PlayerController.getPlayers = async (req, res) => {
 };
 PlayerController.getPlayersById = async (req, res) => {
     try {
-        const { playerId } = req.body;
+        const playerId = parseInt(req.params.playerId);
         if (!playerId) {
-            return apiResponse_1.ApiResponse.error(res, "Required Player Id", 400);
+            return apiResponse_1.ApiResponse.error(res, "Player not found or update failed", 404, {
+                isNotFound: true,
+            });
         }
-        const players = await playerService.getPlayerById(req, playerId);
-        apiResponse_1.ApiResponse.success(res, players, 200, "Players retrieved successfully");
+        const player = await playerService.getPlayerById(req.role, playerId, true, req.userId);
+        if (player) {
+            apiResponse_1.ApiResponse.success(res, player, 200, "Players retrieved successfully");
+        }
+        else {
+            return apiResponse_1.ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
+                isAccessDenied: true,
+            });
+        }
     }
     catch (error) {
         console.log(error);
-        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+            isError: true,
+        });
     }
 };
-PlayerController.getInactivePlayers = async (req, res) => {
+PlayerController.getPlayersByIdForEdit = async (req, res) => {
     try {
-        const data = req.query;
-        const page = data.page || 1;
-        const search = data.search || "";
-        const owner = data.owner || "all";
-        const approved = data.approved || "all";
-        const limit = 100;
-        const sort = data.sort || "";
-        const { players, total, hasMore } = await playerService.getPlayers(req.role, req.userId, page, limit, search, owner, approved, sort, false);
-        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+        const playerId = parseInt(req.params.playerId);
+        if (!playerId) {
+            return apiResponse_1.ApiResponse.error(res, "Player not found or update failed", 404, {
+                isNotFound: true,
+            });
+        }
+        const hasAccess = await role_service_1.RoleService.isSelfOrAdminOrAbove(req.role, req.userId, playerId, true);
+        let player = null;
+        if (hasAccess) {
+            player = await playerService.getPlayerById(req.role, playerId, true, req.userId);
+        }
+        if (player) {
+            apiResponse_1.ApiResponse.success(res, player, 200, "Players retrieved successfully");
+        }
+        else {
+            return apiResponse_1.ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
+                isAccessDenied: true,
+            });
+        }
     }
     catch (error) {
         console.log(error);
-        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+            isError: true,
+        });
     }
 };
 PlayerController.exportPlayers = async (req, res) => {
@@ -118,7 +141,7 @@ PlayerController.exportPlayers = async (req, res) => {
                 return sendExcel("Access Denied", 403, "access_denied.xlsx", "Error");
             }
         }
-        const players = await playerService.getPlayerForExport(allowedPlayerIds);
+        const players = await playerService.getPlayerForExport(req.role, allowedPlayerIds);
         if (players.length === 0) {
             return sendExcel("No player data available for export", 200, "no_players_found.xlsx");
         }
@@ -130,5 +153,19 @@ PlayerController.exportPlayers = async (req, res) => {
     catch (error) {
         console.error("Export error:", error);
         sendExcel("Internal server error. Please try again later.", 500, "server_error.xlsx", "Error");
+    }
+};
+PlayerController.getAdmins = async (req, res) => {
+    try {
+        const data = req.query;
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getAdmins(page, limit, search);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
     }
 };

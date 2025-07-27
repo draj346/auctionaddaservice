@@ -8,6 +8,7 @@ import * as roleValidation from '../validations/role.validations';
 import * as playerValidation from '../validations/player.validations';
 import * as notificationValidation from '../validations/notification.validations';
 import * as auctionValidation from '../validations/auction.validations';
+import * as contactValidation from '../validations/contact.validations';
 import { validate } from '../middleware/validation.middleware';
 import { authMiddleware } from '../middleware/auth.middleware';
 import { FileController } from '../controllers/file.controller';
@@ -18,6 +19,7 @@ import { RoleController } from '../controllers/role.controller';
 import path from 'path';
 import { NotificationController } from '../controllers/notification.controller';
 import { AuctionController } from '../controllers/auction.controller';
+import { ContactController } from '../controllers/contact.controller';
 
 const router = Router();
 
@@ -39,6 +41,9 @@ router.post('/sendOTP', validate(authValidation.sendOTPSchema), AuthController.s
 router.post('/verifyOTP', validate(authValidation.verifyOTPSchema), AuthController.verifyOTP);
 router.post('/resetPassword', validate(authValidation.resetPasswordSchema), AuthController.resetPassword);
 router.post('/login', validate(authValidation.loginSchema), AuthController.login);
+
+//Contact Message
+router.post('/addComment', validate(contactValidation.insertMessageSchema), ContactController.insertComment);
 
 // Protected routes under /auth
 router.use('/auth', authMiddleware);
@@ -82,6 +87,10 @@ router.delete('/auth/auctions/:auctionId/delete', validate(auctionValidation.auc
 router.put('/auth/auctions/:auctionId/approve', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.approveAuction);
 router.get('/auth/auctions/search', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionSearchTextSchema, "query"), AuctionController.getAuctionBySearch);
 router.get('/auth/auctions/:auctionId',validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionById);
+//Contact Message
+router.get('/auth/getUnWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), ContactController.getUnWorkComment);
+router.get('/auth/getWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), ContactController.getWorkComment);
+router.get('/auth/updateWorkStatus', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(contactValidation.updateWorkStatusSchema), ContactController.updateWorkStatus);
 
 
 

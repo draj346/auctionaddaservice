@@ -16,6 +16,10 @@ const auth_service_1 = require("../services/auth.service");
 const constants_1 = require("../constants/constants");
 const role_service_1 = require("../services/role.service");
 const roles_constants_1 = require("../constants/roles.constants");
+const notification_service_1 = require("../services/notification.service");
+const notification_constants_1 = require("../constants/notification.constants");
+const auction_service_1 = require("../services/auction.service");
+const roles_helpers_1 = require("../helpers/roles.helpers");
 const otpService = new otp_service_1.OTPService();
 const emailService = new email_service_1.EmailService();
 const smsService = new sms_service_1.SmsService();
@@ -34,7 +38,9 @@ AuthController.sendOTP = async (req, res) => {
         }
         const isValidUser = await auth_service_1.AuthService.isValidUser(null, identifier);
         if (!isValidUser) {
-            return apiResponse_1.ApiResponse.error(res, "User is not valid", 401);
+            return apiResponse_1.ApiResponse.error(res, "User is not valid", 401, {
+                isNotFound: true,
+            });
         }
         const sessionId = await (0, encryption_1.encryptPassword)(`session_${identifier}`);
         otpService.invalidateOTP(sessionId);
@@ -87,13 +93,14 @@ AuthController.resetPassword = async (req, res) => {
             return apiResponse_1.ApiResponse.error(res, "OTP not verified for this session", 400);
         }
         const identifier = otpService.getIdentifier(sessionId);
-        const player = await auth_service_1.AuthService.verifyPlayerByIdentifier(identifier, true);
-        if (!player) {
+        const playerInfo = await auth_service_1.AuthService.getPlayerIdByIdentifier(identifier);
+        if (!playerInfo) {
             return apiResponse_1.ApiResponse.error(res, "Player not found", 401);
         }
-        const success = await auth_service_1.AuthService.updatePassword(player.playerId, password);
+        const success = await auth_service_1.AuthService.updatePassword(playerInfo.playerId, password);
         if (success) {
             otpService.invalidateOTP(sessionId);
+            notification_service_1.NotificationService.createNotification(playerInfo.playerId, notification_constants_1.NotificationMessage.PASSWORD_UPDATED, notification_constants_1.NOTIFICATIONS.PASSWORD_UPDATED, playerInfo.playerId, roles_constants_1.ROLES.PLAYER);
             apiResponse_1.ApiResponse.success(res, {}, 200, "Password reset successfully");
         }
         else {
@@ -111,48 +118,73 @@ AuthController.login = async (req, res) => {
         if (!method) {
             return apiResponse_1.ApiResponse.error(res, "Authentication method required", 400);
         }
-        let player;
+        let playerInfo;
         let isValid = false;
         if (method === "otp") {
             if (!sessionId || !code) {
                 return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.MISSING_PARAMS, 400);
             }
-            const playerId = otpService.verifyOTP(sessionId, code);
-            if (!playerId) {
+            const indentifierData = otpService.verifyOTP(sessionId, code);
+            if (!indentifierData) {
                 return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.INVALID_CREDENTIALS, 500);
             }
-            player = await auth_service_1.AuthService.verifyPlayerByIdentifier(playerId, true);
+            playerInfo = await auth_service_1.AuthService.getPlayerIdByIdentifier(indentifierData);
+            if (!playerInfo) {
+                return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.PLAYER_NOT_FOUND, 401);
+            }
+            if (sessionId) {
+                otpService.invalidateOTP(sessionId);
+            }
         }
         else if (method === "password") {
             if (!identifier || !password) {
                 return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.MISSING_PARAMS, 400);
             }
-            player = await auth_service_1.AuthService.verifyPlayerByIdentifier(identifier, true);
-            if (player) {
-                isValid = await (0, encryption_1.comparePassword)(password, player.password);
+            playerInfo = await auth_service_1.AuthService.getPlayerIdByIdentifier(identifier);
+            if (!playerInfo) {
+                return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.PLAYER_NOT_FOUND, 401);
+            }
+            const dbPassword = await auth_service_1.AuthService.getPasswordByPlayerId(playerInfo.playerId);
+            if (!dbPassword) {
+                return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.INVALID_CREDENTIALS, 500);
+            }
+            isValid = await (0, encryption_1.comparePassword)(password, dbPassword.password);
+            if (!isValid) {
+                return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.INVALID_CREDENTIALS, 500);
             }
         }
         else {
             return apiResponse_1.ApiResponse.error(res, "Unsupported authentication method", 400);
         }
-        if (!player) {
-            return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.PLAYER_NOT_FOUND, 401);
+        const image = await auth_service_1.AuthService.getPlayerImageByPlayerId(playerInfo.playerId);
+        let role = await role_service_1.RoleService.getUserRole(playerInfo.playerId);
+        if (roles_helpers_1.RoleHelper.isOrganiser(role)) {
+            const isOrganiser = await auction_service_1.AuctionService.isOrganiser(playerInfo.playerId);
+            if (!isOrganiser) {
+                role = roles_constants_1.ROLES.PLAYER;
+                const roleResult = await role_service_1.RoleService.deleteRole(playerInfo.playerId);
+                if (roleResult) {
+                    notification_service_1.NotificationService.createNotification(playerInfo.playerId, notification_constants_1.NotificationMessage.REMOVE_ROLE_FROM_ORGANISER, notification_constants_1.NOTIFICATIONS.ROLE_UPDATED, playerInfo.playerId, roles_constants_1.ROLES.PLAYER);
+                }
+            }
         }
-        if (method === "password" && !isValid) {
-            return apiResponse_1.ApiResponse.error(res, constants_1.ErrorMessage.INVALID_CREDENTIALS, 500);
-        }
-        if (sessionId) {
-            otpService.invalidateOTP(sessionId);
-        }
-        const role = await role_service_1.RoleService.getUserRole(player.playerId);
-        const tokenPayload = { playerId: player.playerId, role };
+        const tokenPayload = {
+            playerId: playerInfo.playerId,
+            role,
+            name: playerInfo.name,
+            email: playerInfo.email,
+            mobile: playerInfo.mobile,
+        };
         const token = jsonwebtoken_1.default.sign(tokenPayload, env_1.JWT_SECRET, {
             expiresIn: "1d",
         });
         const responsePayload = {
             token,
-            role: role === roles_constants_1.ROLES.OWNER ? 'R' : role[0],
-            image: player.image || ''
+            role: role === roles_constants_1.ROLES.OWNER ? "R" : role[0],
+            image: image || "",
+            name: playerInfo.name,
+            email: playerInfo.email,
+            mobile: playerInfo.mobile,
         };
         apiResponse_1.ApiResponse.success(res, responsePayload, 200, "Login successful");
     }

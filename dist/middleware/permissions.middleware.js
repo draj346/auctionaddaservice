@@ -15,10 +15,10 @@ const CheckPermission = (permissionRoles) => {
                 return next();
             }
             // 3. Permission denied
-            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403);
+            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403, { isAccessDenied: true });
         }
         catch (error) {
-            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500);
+            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -35,10 +35,10 @@ const CheckOrganiserPermission = (role, permissionRoles) => {
                 return next();
             }
             // 3. Permission denied
-            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403);
+            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403, { isAccessDenied: true });
         }
         catch (error) {
-            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500);
+            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -56,10 +56,10 @@ const CheckOwnerWithOrganiserPermission = (role, permissionRoles) => {
             }
             //3. Check if Organizer has access to Team
             // 4. Permission denied
-            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403);
+            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403, { isAccessDenied: true });
         }
         catch (error) {
-            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500);
+            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
@@ -76,10 +76,10 @@ const CheckOwnerOnlyPermission = (role, permissionRoles) => {
                 return next();
             }
             // 3. Permission denied
-            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403);
+            return apiResponse_1.ApiResponse.error(res, `Forbidden: You don't have proper permission to do this activity`, 403, { isAccessDenied: true });
         }
         catch (error) {
-            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500);
+            return apiResponse_1.ApiResponse.error(res, 'Permission check failed', 500, { isError: true });
         }
     };
 };
