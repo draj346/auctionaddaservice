@@ -9,9 +9,11 @@ CREATE TABLE auctions (
   startTime VARCHAR(10) DEFAULT NULL,
   maxPlayerPerTeam INT Not Null,
   minPlayerPerTeam INT default 11,
+  season INT,
   playerId INT NOT NULL,
   code VARCHAR(20),
-  isLive BOOLEAN DEFAULT false, -- 
+  isLive BOOLEAN DEFAULT false, 
+  isCompleted BOOLEAN DEFAULT false, 
   pointPerTeam INT NOT NULL,
   baseBid INT NOT NULL,
   baseIncreaseBy INT NOT NULL,
@@ -27,6 +29,7 @@ CREATE TABLE auctions (
   FOREIGN KEY (playerId) REFERENCES players(playerId) ON DELETE CASCADE,
   INDEX (startDate),
   UNIQUE INDEX idx_code (code),
+  INDEX idx_auction_owner (auctionId, playerId),
   INDEX idx_auction_status (auctionId, paymentStatus, isLive),
   INDEX idx_auction_active_status (auctionId, isActive, isLive),
   INDEX idx_auction_status_active (playerId, paymentStatus, isActive),
@@ -56,7 +59,8 @@ CREATE TABLE teams (
   INDEX (isActive),
   INDEX (name),
   INDEX (shortName),
-  INDEX auctionId_idx (auctionId)
+  INDEX auctionId_idx (auctionId),
+  INDEX idx_teams_active (auctionId, isActive, teamId)
 ) AUTO_INCREMENT=1001;
 
 CREATE TABLE team_owner (
@@ -88,7 +92,8 @@ CREATE TABLE auction_category (
   createdAt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   INDEX (auctionId),
   INDEX (name),
-  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE
+  FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE,
+  INDEX idx_categories_auction (auctionId, categoryId)
 ) AUTO_INCREMENT=1001;
 
 CREATE TABLE auction_category_player (

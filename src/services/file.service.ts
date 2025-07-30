@@ -39,6 +39,16 @@ export class FileService {
     }
   }
 
+  async updateFileOnly(data: FileSchemaProps): Promise<boolean> {
+     const [result] = await pool.execute<ResultSetHeader>(FileQueries.updateFile, [
+        data.name,
+        data.path,
+        data.url,
+        data.fileId,
+      ]);
+      return result.affectedRows > 0;
+  }
+
   async deleteUploadedFile(filePath: string): Promise<void> {
     try {
       await fs.access(filePath);

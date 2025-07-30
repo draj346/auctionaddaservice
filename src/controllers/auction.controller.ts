@@ -7,9 +7,10 @@ import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionsHelper } from "../helpers/auctions.helpers";
 import { FileService } from "../services/file.service";
-import { toMySQLDate } from "../utils/common";
+import { DuplicateFile, toMySQLDate } from "../utils/common";
 import { RoleService } from "../services/role.service";
 import { ROLES } from "../constants/roles.constants";
+import { FILE_UPLOAD_FOLDER } from "../config/env";
 
 const fileService = new FileService();
 
@@ -22,9 +23,11 @@ export class AuctionController {
       if (!data.auctionId) {
         playerId = req.userId;
         data.playerId = playerId;
-        const isFreeLimitReached = await AuctionService.isAuctionInPendingState(playerId);
-        if (isFreeLimitReached) {
-          return ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
+        if (!RoleHelper.isAdminAndAbove(req.role)) {
+          const isFreeLimitReached = await AuctionService.isAuctionInPendingState(playerId);
+          if (isFreeLimitReached) {
+            return ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
+          }
         }
       } else {
         const auctionInfo = await AuctionService.getAuctionPlayerId(data.auctionId);
@@ -92,6 +95,92 @@ export class AuctionController {
     }
   };
 
+  static getAuctionsForCopy = async (req: Request, res: Response) => {
+    try {
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        const isFreeLimitReached = await AuctionService.isAuctionInPendingState(req.userId);
+        if (isFreeLimitReached) {
+          return ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
+        }
+      }
+      const auctionResponse = await AuctionService.getAuctionsForCopy(req.userId, req.role);
+      ApiResponse.success(res, auctionResponse, 200, "Auctions retrieve successfully!!");
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static copyAuction = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const isAdmin = RoleHelper.isAdminAndAbove(req.role);
+      if (!isAdmin) {
+        const isFreeLimitReached = await AuctionService.isAuctionInPendingState(req.userId);
+        if (isFreeLimitReached) {
+          return ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
+        }
+      }
+      const auctionResponse = await AuctionService.copyAuctionById(auctionId, req.userId, isAdmin);
+      if (auctionResponse) {
+        const response: any = {};
+        if (auctionResponse?.status && auctionResponse.auctionId) {
+          const code = AuctionsHelper.generateAuctionCode(auctionResponse.auctionId, req.name, req.role);
+          await AuctionService.updateAuctionCode(code, auctionResponse.auctionId);
+
+          if (auctionResponse.imageId && auctionResponse.imagePath) {
+            const fileResponse = await DuplicateFile(auctionResponse.imagePath);
+            if (fileResponse.name) {
+              const url = `${FILE_UPLOAD_FOLDER}${fileResponse.name}`;
+              fileService.updateFileOnly({
+                name: fileResponse.name,
+                path: fileResponse.path,
+                url,
+                fileId: auctionResponse.imageId,
+              });
+            }
+          }
+
+          if (auctionResponse.qrCodeId && auctionResponse.qrCodePath) {
+            const qrCodeResponse = await DuplicateFile(auctionResponse.qrCodePath);
+            if (qrCodeResponse.name) {
+              const url = `${FILE_UPLOAD_FOLDER}${qrCodeResponse.name}`;
+              fileService.updateFileOnly({
+                name: qrCodeResponse.name,
+                path: qrCodeResponse.path,
+                url,
+                fileId: auctionResponse.qrCodeId,
+              });
+            }
+          }
+
+          NotificationService.createNotification(
+            auctionResponse?.playerId || req.userId,
+            auctionResponse.playerId === req.userId
+              ? NotificationMessage.AUCTION_COPY_BY_SELF
+              : NotificationMessage.AUCTION_COPY_BY_ELSE,
+            NOTIFICATIONS.AUCTION_CREATED as NotificationType,
+            req.userId,
+            req.role,
+            AuctionsHelper.getNotificationJSON(auctionResponse.name || "", auctionResponse.state || "", code || "")
+          );
+          ApiResponse.success(res, {}, 200, "Copy Auctions result!!");
+        } else {
+          if (auctionResponse.status !== undefined) response.status = auctionResponse.status;
+          if (auctionResponse.isAccessDenied !== undefined) response.isAccessDenied = auctionResponse.isAccessDenied;
+          if (auctionResponse.isError !== undefined) response.isError = auctionResponse.isError;
+
+          ApiResponse.error(res, "Copy Auctions result!!", 200, response);
+        }
+      } else {
+        ApiResponse.error(res, "Unable to copy Auction. Please try again", 200, { isError: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
   static deleteAuction = async (req: Request, res: Response) => {
     try {
       const auctionId = parseInt(req.params.auctionId);
@@ -152,6 +241,30 @@ export class AuctionController {
         ApiResponse.success(res, response, 200, "Auction Details!!");
       } else {
         ApiResponse.error(res, "Unable to delete Auction. Please try again", 200, { isError: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static updateAuctionCompletionStatus = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      let auctionResponse = await AuctionService.updateAuctionCompletionStatus(auctionId);
+      if (auctionResponse) {
+        const auctionInfo = await AuctionService.getAuctionName(auctionId);
+        NotificationService.createNotification(
+          auctionInfo?.playerId || req.userId,
+          NotificationMessage.AUCTION_COMPLETED,
+          NOTIFICATIONS.AUCTION_UPDATED as NotificationType,
+          req.userId,
+          req.role,
+          AuctionsHelper.getNotificationJSON(auctionInfo?.name || "", auctionInfo?.state || "", auctionInfo?.code || "")
+        );
+        ApiResponse.success(res, {}, 200, "auctions completed successfully!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again.", 200, { isError: true });
       }
     } catch (error) {
       console.log(error);

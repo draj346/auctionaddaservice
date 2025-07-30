@@ -2,6 +2,7 @@ export interface ICreateAuction {
   auctionId: number | null;
   imageId: number;
   name: string;
+  season: number;
   state: string;
   district: string;
   startDate: string;
@@ -32,6 +33,7 @@ export interface IAuctionDetails {
   imageId: number | null;
   imagePath?: string;
   name: string;
+  season: number | null;
   state?: string;
   district: string;
   paymentStatus: boolean;
@@ -41,6 +43,7 @@ export interface IAuctionDetails {
   minPlayerPerTeam?: number;
   code: string;
   isLive: boolean;
+  isCompleted: boolean;
   pointPerTeam: number;
   baseBid: number;
   baseIncreaseBy: number;
@@ -50,6 +53,11 @@ export interface IAuctionDetails {
   isPaymentInCompanyAccount: boolean;
   rule: string;
   playerId?: number;
+}
+
+export interface IAuctionCopy {
+  auctionId: number;
+  name: string;
 }
 
 export interface ICategoryRule {
@@ -142,6 +150,7 @@ export interface IAuctionStoreProcedureResponse {
   isLive?: boolean;
   isAccessDenied?: boolean;
   isNotFound?: boolean;
+  isError?: boolean;
   isLocked?: boolean;
   imagePath?: string;
   qrCodePath?: string;
@@ -149,6 +158,9 @@ export interface IAuctionStoreProcedureResponse {
   name?: string;
   state?: string;
   code?: string;
+  auctionId?: number;
+  imageId?: number;
+  qrCodeId?: number;
 }
 
 export interface IAuctionErrors {

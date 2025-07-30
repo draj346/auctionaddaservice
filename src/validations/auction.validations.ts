@@ -5,6 +5,7 @@ export const upsetAuctionSchema = Joi.object<ICreateAuction>({
   auctionId: Joi.number().required().allow(null),
   imageId: Joi.number().required().allow(null),
   name: Joi.string().trim().required(),
+  season: Joi.number().max(20).required().allow(null),
   state: Joi.string().trim().required(),
   district: Joi.string().trim().required(),
   startDate: Joi.string()

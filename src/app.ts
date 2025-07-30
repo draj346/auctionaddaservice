@@ -11,6 +11,7 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:3001',
+    'http://10.211.55.3:3001'
   ],
   methods: ['GET', 'POST', 'DELETE', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization'],

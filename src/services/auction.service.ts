@@ -3,6 +3,7 @@ import pool from "../config/db.config";
 import {
   IAssignOwner,
   IAssignWishlist,
+  IAuctionCopy,
   IAuctionDetails,
   IAuctionPlayerIdWithName,
   IAuctionStoreProcedureResponse,
@@ -17,6 +18,8 @@ import {
 } from "../types/auction.types";
 import { AuctionQueries } from "../queries/auction.queries";
 import { FREE_AUCTION_CREATE_LIMIT } from "../config/env";
+import { PlayerRole } from "../constants/roles.constants";
+import { RoleHelper } from "./../helpers/roles.helpers";
 
 export class AuctionService {
   public static async upsetAuction(auction: ICreateAuction): Promise<number> {
@@ -24,6 +27,7 @@ export class AuctionService {
       auction.auctionId || null,
       auction.imageId || null,
       auction.name,
+      auction.season,
       auction.state,
       auction.district,
       auction.startDate,
@@ -36,34 +40,44 @@ export class AuctionService {
       auction.baseIncreaseBy,
       auction.isPaymentInCompanyAccount,
       auction.qrCodeId || null,
-      auction.rule
+      auction.rule,
     ]);
 
-    return result.affectedRows > 0  ? result.insertId : 0;
+    return result.affectedRows > 0 ? result.insertId : 0;
   }
 
-   public static async updateAuctionCode(code: string, auctionId: number): Promise<boolean> {
-     const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updateAuctionCode, [
-      code,
-      auctionId
-    ]);
+  public static async updateAuctionCode(code: string, auctionId: number): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updateAuctionCode, [code, auctionId]);
 
     return result.affectedRows > 0;
   }
 
   public static async isAuctionInPendingState(playerId: number): Promise<boolean> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.checkAuctionPending, [playerId]);
-    return result?.length > 0 ? result[0].count === FREE_AUCTION_CREATE_LIMIT : false;
+    return result?.length > 0 ? result[0].count >= FREE_AUCTION_CREATE_LIMIT : false;
   }
 
   public static async getAuctionPlayerId(auctionId: number): Promise<IAuctionPlayerIdWithName | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctionPlayerId, [auctionId]);
-    return result?.length > 0 ? result[0] as IAuctionPlayerIdWithName : null;
+    return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
   }
 
   public static async getAuctions(playerId: number): Promise<IAuctionDetails[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctions, [playerId]);
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;
+  }
+
+  public static async getAuctionsForCopy(playerId: number, role: PlayerRole): Promise<IAuctionCopy[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(
+      RoleHelper.isAdminAndAbove(role) ? AuctionQueries.getAuctionForCopyForAdmin : AuctionQueries.getAuctionForCopy,
+      [playerId]
+    );
+    return result?.length > 0 ? (result as IAuctionCopy[]) : null;
+  }
+
+  public static async updateAuctionCompletionStatus(auctionId: number): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updateAuctionCompletionStatus, [auctionId]);
+    return result.affectedRows > 0;
   }
 
   public static async approveAuction(auctionId: number): Promise<boolean> {
@@ -97,6 +111,19 @@ export class AuctionService {
     isAdmin: boolean
   ): Promise<IAuctionStoreProcedureResponse | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.deleteAuctionById, [
+      auctionId,
+      playerId,
+      isAdmin,
+    ]);
+    return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
+  }
+
+   public static async copyAuctionById(
+    auctionId: number,
+    playerId: number,
+    isAdmin: boolean
+  ): Promise<IAuctionStoreProcedureResponse | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.copyAuctionById, [
       auctionId,
       playerId,
       isAdmin,

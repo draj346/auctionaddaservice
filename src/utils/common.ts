@@ -1,3 +1,6 @@
+import path from "path";
+import fs from 'fs/promises';
+
 const normalizeValue = (value: any) => {
   if (value === null || value === undefined || value === '') return null;
   if (value === true || value === 'true' || value === 1 || value === '1') return true;
@@ -84,3 +87,13 @@ export const toMySQLDate = (dateString: string): string => {
   const [day, month, year] = dateString.split('-');
   return `${year}-${month}-${day}`;
 };
+
+export async function DuplicateFile(originalFilePath: string): Promise<{name: string; path: string}> {
+    const ext = path.extname(originalFilePath);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const newFilename = `image-${uniqueSuffix}${ext}`;
+    const newFilePath = path.join(path.dirname(originalFilePath), newFilename);
+
+    await fs.copyFile(originalFilePath, newFilePath);
+    return {name: newFilename, path: newFilePath};
+}
