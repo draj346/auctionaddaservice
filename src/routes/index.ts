@@ -95,7 +95,4 @@ router.get('/auth/getUnWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_A
 router.get('/auth/getWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), ContactController.getWorkComment);
 router.get('/auth/updateWorkStatus', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(contactValidation.updateWorkStatusSchema), ContactController.updateWorkStatus);
 
-
-
-
 export default router;

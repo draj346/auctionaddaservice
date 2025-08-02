@@ -11,24 +11,25 @@ const app = express();
 const corsOptions = {
   origin: [
     'http://localhost:3001',
-    'http://10.211.55.3:3001'
+    'https://auctionadda.com'
   ],
   methods: ['GET', 'POST', 'DELETE', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true, // Allow cookies/auth headers
+  credentials: true,
 };
 
 // Apply CORS middleware
 app.use(cors(corsOptions));
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true })); 
+app.use(express.json({ limit: '3mb' }));
+app.use(express.urlencoded({ extended: true, limit: '3mb' }));
 
 // Public routes
-app.use(router);
+app.use('/v1', router);
 
 app.use(notFoundHandler);
-
 
 app.listen(PORT, async () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+export default app;

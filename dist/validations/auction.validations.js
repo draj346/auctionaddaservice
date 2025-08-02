@@ -9,6 +9,7 @@ exports.upsetAuctionSchema = joi_1.default.object({
     auctionId: joi_1.default.number().required().allow(null),
     imageId: joi_1.default.number().required().allow(null),
     name: joi_1.default.string().trim().required(),
+    season: joi_1.default.number().max(20).required().allow(null),
     state: joi_1.default.string().trim().required(),
     district: joi_1.default.string().trim().required(),
     startDate: joi_1.default.string()

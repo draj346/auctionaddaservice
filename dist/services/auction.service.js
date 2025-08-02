@@ -7,12 +7,14 @@ exports.AuctionService = void 0;
 const db_config_1 = __importDefault(require("../config/db.config"));
 const auction_queries_1 = require("../queries/auction.queries");
 const env_1 = require("../config/env");
+const roles_helpers_1 = require("./../helpers/roles.helpers");
 class AuctionService {
     static async upsetAuction(auction) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.upsertAuction, [
             auction.auctionId || null,
             auction.imageId || null,
             auction.name,
+            auction.season,
             auction.state,
             auction.district,
             auction.startDate,
@@ -25,20 +27,17 @@ class AuctionService {
             auction.baseIncreaseBy,
             auction.isPaymentInCompanyAccount,
             auction.qrCodeId || null,
-            auction.rule
+            auction.rule,
         ]);
         return result.affectedRows > 0 ? result.insertId : 0;
     }
     static async updateAuctionCode(code, auctionId) {
-        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updateAuctionCode, [
-            code,
-            auctionId
-        ]);
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updateAuctionCode, [code, auctionId]);
         return result.affectedRows > 0;
     }
     static async isAuctionInPendingState(playerId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.checkAuctionPending, [playerId]);
-        return result?.length > 0 ? result[0].count === env_1.FREE_AUCTION_CREATE_LIMIT : false;
+        return result?.length > 0 ? result[0].count >= env_1.FREE_AUCTION_CREATE_LIMIT : false;
     }
     static async getAuctionPlayerId(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionPlayerId, [auctionId]);
@@ -47,6 +46,14 @@ class AuctionService {
     static async getAuctions(playerId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctions, [playerId]);
         return result?.length > 0 ? result : null;
+    }
+    static async getAuctionsForCopy(playerId, role) {
+        const [result] = await db_config_1.default.execute(roles_helpers_1.RoleHelper.isAdminAndAbove(role) ? auction_queries_1.AuctionQueries.getAuctionForCopyForAdmin : auction_queries_1.AuctionQueries.getAuctionForCopy, [playerId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async updateAuctionCompletionStatus(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updateAuctionCompletionStatus, [auctionId]);
+        return result.affectedRows > 0;
     }
     static async approveAuction(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.approveAuction, [auctionId]);
@@ -70,6 +77,14 @@ class AuctionService {
     }
     static async deleteAuctionById(auctionId, playerId, isAdmin) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteAuctionById, [
+            auctionId,
+            playerId,
+            isAdmin,
+        ]);
+        return result?.length > 0 ? result[0][0].result : null;
+    }
+    static async copyAuctionById(auctionId, playerId, isAdmin) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.copyAuctionById, [
             auctionId,
             playerId,
             isAdmin,

@@ -213,7 +213,7 @@ export class AuthController {
       if (error instanceof jwt.JsonWebTokenError) {
         return ApiResponse.error(res, "Token generation failed", 500);
       }
-
+      console.error(error);
       const errorMessage = error instanceof Error ? error.message : ErrorMessage.AUTH_ERROR;
       ApiResponse.error(res, errorMessage, 500);
     }

@@ -1,6 +1,12 @@
 "use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.toMySQLDate = exports.getChangedData = void 0;
+exports.DuplicateFile = DuplicateFile;
+const path_1 = __importDefault(require("path"));
+const promises_1 = __importDefault(require("fs/promises"));
 const normalizeValue = (value) => {
     if (value === null || value === undefined || value === '')
         return null;
@@ -84,3 +90,11 @@ const toMySQLDate = (dateString) => {
     return `${year}-${month}-${day}`;
 };
 exports.toMySQLDate = toMySQLDate;
+async function DuplicateFile(originalFilePath) {
+    const ext = path_1.default.extname(originalFilePath);
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    const newFilename = `image-${uniqueSuffix}${ext}`;
+    const newFilePath = path_1.default.join(path_1.default.dirname(originalFilePath), newFilename);
+    await promises_1.default.copyFile(originalFilePath, newFilePath);
+    return { name: newFilename, path: newFilePath };
+}

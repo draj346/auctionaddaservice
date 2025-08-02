@@ -111,8 +111,11 @@ router.post('/auth/players/approve', (0, validation_middleware_1.validate)(roleV
 router.post('/auth/auctions/upload', (0, validation_middleware_1.validate)(fileValidation.userUploadForAuctionSchema), file_controller_1.FileController.userUploadForAuction);
 router.post('/auth/auctions/new', (0, validation_middleware_1.validate)(auctionValidation.upsetAuctionSchema), auction_controller_1.AuctionController.upsetAuction);
 router.get('/auth/auctions', auction_controller_1.AuctionController.getAuctions);
+router.get('/auth/auctions/forCopy', auction_controller_1.AuctionController.getAuctionsForCopy);
+router.post('/auth/auctions/:auctionId/copy', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.copyAuction);
 router.delete('/auth/auctions/:auctionId/delete', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.deleteAuction);
 router.put('/auth/auctions/:auctionId/approve', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.approveAuction);
+router.put('/auth/auctions/:auctionId/completed', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.updateAuctionCompletionStatus);
 router.get('/auth/auctions/search', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.auctionSearchTextSchema, "query"), auction_controller_1.AuctionController.getAuctionBySearch);
 router.get('/auth/auctions/:auctionId', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.getAuctionById);
 //Contact Message

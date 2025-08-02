@@ -192,6 +192,7 @@ AuthController.login = async (req, res) => {
         if (error instanceof jsonwebtoken_1.default.JsonWebTokenError) {
             return apiResponse_1.ApiResponse.error(res, "Token generation failed", 500);
         }
+        console.error(error);
         const errorMessage = error instanceof Error ? error.message : constants_1.ErrorMessage.AUTH_ERROR;
         apiResponse_1.ApiResponse.error(res, errorMessage, 500);
     }

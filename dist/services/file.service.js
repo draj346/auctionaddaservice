@@ -37,6 +37,15 @@ class FileService {
             return this.uploadFile(data);
         }
     }
+    async updateFileOnly(data) {
+        const [result] = await db_config_1.default.execute(file_queries_1.FileQueries.updateFile, [
+            data.name,
+            data.path,
+            data.url,
+            data.fileId,
+        ]);
+        return result.affectedRows > 0;
+    }
     async deleteUploadedFile(filePath) {
         try {
             await promises_1.default.access(filePath);
