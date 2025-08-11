@@ -25,6 +25,7 @@ app.use(express.urlencoded({ extended: true, limit: '3mb' }));
 
 // Public routes
 app.use('/v1', router);
+// app.use(router);
 
 app.use(notFoundHandler);
 

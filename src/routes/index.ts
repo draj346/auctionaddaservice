@@ -20,6 +20,7 @@ import path from 'path';
 import { NotificationController } from '../controllers/notification.controller';
 import { AuctionController } from '../controllers/auction.controller';
 import { ContactController } from '../controllers/contact.controller';
+import { CommonController } from '../controllers/common.controller';
 
 const router = Router();
 
@@ -44,6 +45,12 @@ router.post('/login', validate(authValidation.loginSchema), AuthController.login
 
 //Contact Message
 router.post('/addComment', validate(contactValidation.insertMessageSchema), ContactController.insertComment);
+
+//Guest
+router.get('/banner', CommonController.getBanner);
+router.get('/discount', CommonController.getDiscount);
+router.get('/videos', CommonController.getYoutubeVideos);
+
 
 // Protected routes under /auth
 router.use('/auth', authMiddleware);
