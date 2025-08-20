@@ -77,15 +77,14 @@ BEGIN
                 END IF;
 
             WHEN 'ASSIGN_CATEGORY' THEN
-                INSERT INTO auction_category_player (auctionId, playerId, categoryId, baseBid)
-                SELECT p_auction_id, player_id, p_category_id, p_base_bid
+                INSERT INTO auction_category_player (auctionId, playerId, categoryId)
+                SELECT p_auction_id, player_id, p_category_id
                 FROM JSON_TABLE(
                     p_player_ids,
                     '$[*]' COLUMNS(player_id INT PATH '$')
                 ) AS jt
                 ON DUPLICATE KEY UPDATE 
-                    categoryId = VALUES(categoryId),
-                    baseBid = VALUES(baseBid);
+                    categoryId = VALUES(categoryId);
                     
                 IF ROW_COUNT() = 0 AND JSON_LENGTH(p_player_ids) > 0 THEN
                     SET v_success = FALSE;

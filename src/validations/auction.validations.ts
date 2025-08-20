@@ -139,6 +139,12 @@ export const updatePlayerToAuctionSchema = Joi.object<IManageAuction>({
   isApproved: Joi.boolean().allow(null).optional(),
 });
 
+export const updatePlayerToCategorySchema = Joi.object<IManageAuction>({
+  auctionId: Joi.number().min(1).required(),
+  categoryId: Joi.number().min(1).required().allow(null),
+  playerIds: Joi.array().items(Joi.number().integer().min(1).required()),
+});
+
 export const upsetWishlistSchema = Joi.object<IAssignWishlist>({
   id: Joi.number().required().allow(null),
   auctionId: Joi.number().required(),

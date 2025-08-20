@@ -181,13 +181,16 @@ export class PlayerController {
     try {
       const auctionId = parseInt(req.params.auctionId);
       const data = req.query as unknown as AuctionPlayerPaginationSchema;
+      const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
       if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
+        if (auctionInfo.playerId !== req.userId) {
           return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
         }
       }
-
       const page = data.page || 1;
       const search = data.search || "";
       const limit = 100;
@@ -227,6 +230,74 @@ export class PlayerController {
         limit,
         search,
         auctionId,
+      );
+      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    } catch (error) {
+      console.log(error);
+       ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static getPlayersForCategory = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const data = req.query as unknown as AuctionPlayerPaginationSchema;
+
+      const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        if (auctionInfo.playerId !== req.userId) {
+          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+      }
+
+      const page = data.page || 1;
+      const search = data.search || "";
+      const limit = 100;
+
+      const { players, total, hasMore } = await playerService.getPlayersForCategory(
+        page,
+        limit,
+        search,
+        auctionId,
+      );
+      ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    } catch (error) {
+      console.log(error);
+       ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static getParticipantPlayersForCategory = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const categoryId = parseInt(req.params.categoryId);
+      const data = req.query as unknown as AuctionPlayerPaginationSchema;
+
+      const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        if (auctionInfo.playerId !== req.userId) {
+          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+      }
+
+      const page = data.page || 1;
+      const search = data.search || "";
+      const limit = 100;
+
+      const { players, total, hasMore } = await playerService.getparticipantPlayersForCategory(
+        page,
+        limit,
+        search,
+        auctionId,
+        categoryId
       );
       ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
     } catch (error) {

@@ -127,7 +127,62 @@ export class PlayerService {
       pool.execute<RowDataPacket[]>(
         PlayerQueries.getAddedPlayersForAuction(userId, search, offset, limit, auctionId)
       ),
-      pool.execute<RowDataPacket[]>(AuctionQueries.getCountAuctionPlayersPending, [auctionId]),
+      pool.execute<RowDataPacket[]>(PlayerQueries.getAddedPlayersCountForAuction(userId, search, offset, limit, auctionId)),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
+  }
+
+  async getPlayersForCategory(
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getPlayersForCategory(search, offset, limit, auctionId)
+      ),
+      pool.execute<RowDataPacket[]>(
+         PlayerQueries.getPlayersCountForCategory(auctionId, search)
+      ),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
+  }
+
+  async getparticipantPlayersForCategory(
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number,
+    categoryId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getParticipantPlayersForCategory(search, offset, limit, auctionId, categoryId)
+      ),
+      pool.execute<RowDataPacket[]>(
+         PlayerQueries.geParticipantPlayersCountForCategory(auctionId, search, categoryId)
+      ),
     ]);
 
     const totalPlayers = totalResult[0][0].total;

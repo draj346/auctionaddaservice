@@ -25,6 +25,7 @@ export interface Player {
   bowlingStyle?: BOWLING_STYLES;
   description?: string;
   status?: boolean;
+  categoryId?: number;
 }
 
 export interface InitialRegistrationData {
