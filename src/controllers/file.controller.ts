@@ -138,7 +138,7 @@ export class FileController {
             isNotFound: true,
           });
         }
-        const { fileId, auctionId, type } = req.body as AuctionFileData;
+        const { fileId, auctionId, type, showNotification } = req.body as AuctionFileData;
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
         let playerId = req.userId;
@@ -147,6 +147,7 @@ export class FileController {
         if (auctionId) {
           const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
           if (!auctionInfo?.playerId) {
+            await fileService.deleteUploadedFile(imagePath);
             return ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
           }
           playerId = auctionInfo.playerId;
@@ -171,7 +172,7 @@ export class FileController {
           });
         }
         if (result) {
-          if (fileId) {
+          if (fileId && showNotification) {
             if (type === "logo") {
               await NotificationService.createNotification(
                 playerId,
@@ -183,7 +184,7 @@ export class FileController {
                 req.role,
                 AuctionsHelper.getNotificationJSON(name, "", code)
               );
-            } else {
+            } else if(type === "qrcode") {
               await NotificationService.createNotification(
                 playerId,
                 playerId === req.userId

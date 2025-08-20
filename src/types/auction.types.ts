@@ -86,8 +86,8 @@ export interface ITeamDetails {
   teamId: number;
   name: string;
   shortName: string;
-  image: number;
-  path: string;
+  imageId: number;
+  imagePath: string;
   shortcutKey: string;
 }
 
@@ -97,6 +97,20 @@ export interface IAssignOwner {
   ownerId: number;
   tag: "OWNER" | "CO-OWNER";
 }
+
+export interface ITeamOwner {
+  tag: string;
+  name: string;
+  playerId: number;
+}
+
+
+export interface IRemoveOwner {
+  auctionId: number;
+  teamId: number;
+  ownerId: number;
+}
+
 
 export type IIncrements = {
   increment: number;
@@ -135,6 +149,13 @@ export interface IManageAuction {
   auctionId: number;
   categoryId: number;
   playerIds: number[];
+  baseBid: number;
+  isApproved: boolean;
+}
+
+export interface IApprovePlayerForAuction {
+  auctionId: number;
+  playerIds: number[];
 }
 
 export interface IAssignWishlist {
@@ -156,6 +177,7 @@ export interface IAuctionStoreProcedureResponse {
   qrCodePath?: string;
   playerId?: number;
   name?: string;
+  categoryName?: string;
   state?: string;
   code?: string;
   auctionId?: number;

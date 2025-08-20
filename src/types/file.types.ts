@@ -9,6 +9,7 @@ export interface AuctionFileData {
   auctionId: number;
   fileId?: number;
   type: 'logo' | 'qrcode';
+  showNotification?: boolean;
 }
 
 export interface FileSchemaProps {

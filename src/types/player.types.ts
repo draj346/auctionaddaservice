@@ -1,3 +1,8 @@
+export type PLAYER_ROLES = 'Top-order Batsman'| 'Middle-order Batsman'| 'Bowler'| 'All-rounder'| 'Lower-order Batsman'| 'Opening Batsman'| 'None';
+export type BATTING_STYLES = 'Left-hand Batsman'| 'Right-hand Batsman';
+export type BOWLING_STYLES = 'Right-arm fast'| 'Right-arm medium'| 'Left-arm fast'| 'Left-arm medium'| 'Slow left-arm orthodox'| 'Slow left-arm chinaman' | ' Right-arm Off Break'| 'Right-arm Leg Break';
+
+
 export interface Player {
   playerId: number;
   name: string;
@@ -15,6 +20,11 @@ export interface Player {
   isApproved: boolean;
   isActive: boolean;
   isNonPlayer: boolean;
+  playerRole?: PLAYER_ROLES;
+  battingStyle?: BATTING_STYLES;
+  bowlingStyle?: BOWLING_STYLES;
+  description?: string;
+  status?: boolean;
 }
 
 export interface InitialRegistrationData {
@@ -37,6 +47,10 @@ export interface UpdateProfileSchemaData {
   isPaidPlayer: boolean;
   pricePerMatch: number;
   willJoinAnyOwner: boolean;
+  playerRole?: PLAYER_ROLES;
+  battingStyle?: BATTING_STYLES;
+  bowlingStyle?: BOWLING_STYLES;
+  description?: string
 }
 
 export interface AddProfileSchemaData {
@@ -53,6 +67,10 @@ export interface AddProfileSchemaData {
   pricePerMatch: number;
   image: number;
   willJoinAnyOwner: boolean;
+  playerRole?: PLAYER_ROLES;
+  battingStyle?: BATTING_STYLES;
+  bowlingStyle?: BOWLING_STYLES;
+  description?: string
 }
 
 
@@ -90,6 +108,10 @@ export interface AddProfileExcelSchema {
   'Is Paid Player': boolean;
   'Price Per Match': number;
   'Will Join Any Owner': boolean;
+  'Player Role': PLAYER_ROLES;
+  'Batting Style': BATTING_STYLES;
+  'Bowling Style': BOWLING_STYLES;
+  'Description': string
 }
 
 export interface PlayerPaginationSchema {
@@ -98,4 +120,14 @@ export interface PlayerPaginationSchema {
   approved: string;
   sort: string;
   active: string;
+}
+
+export interface OwnerPaginationSchema {
+  search: string;
+}
+
+export interface AuctionPlayerPaginationSchema {
+  page: number;
+  search: string;
+  auctionId: number;
 }

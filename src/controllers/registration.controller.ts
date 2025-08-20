@@ -303,13 +303,17 @@ export class RegistrationController {
           "Is Paid Player",
           "Price Per Match",
           "Will Join Any Owner",
+          "Player Role",
+          "Batting Style",
+          "Bowling Style",
+          "Description"
         ],
         range: 1,
         defval: null,
       });
 
-      if (!worksheet["M1"] || worksheet["M1"].v !== "Result") {
-        XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "M1" });
+      if (!worksheet["Q1"] || worksheet["Q1"].v !== "Result") {
+        XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "Q1" });
       }
 
       const allowedPlayerIds: number[] = [];
@@ -334,7 +338,7 @@ export class RegistrationController {
 
       processedUsers.forEach((user) => {
         XLSX.utils.sheet_add_aoa(worksheet, [[user.Result]], {
-          origin: `M${user.Row}`,
+          origin: `Q${user.Row}`,
         });
       });
 

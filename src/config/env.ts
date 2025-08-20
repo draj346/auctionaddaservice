@@ -17,3 +17,6 @@ export const OTP_EXPIRY_MINUTES = process.env.OTP_EXPIRY_MINUTES
 export const FREE_AUCTION_CREATE_LIMIT = process.env.FREE_AUCTION_CREATE_LIMIT 
   ? parseInt(process.env.FREE_AUCTION_CREATE_LIMIT) 
   : 1;
+export const FREE_TEAM_CREATE_LIMIT = process.env.FREE_TEAM_CREATE_LIMIT 
+  ? parseInt(process.env.FREE_TEAM_CREATE_LIMIT) 
+  : 2;

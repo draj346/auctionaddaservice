@@ -58,6 +58,60 @@ const queries = {
       OFFSET ${offset}`;
   },
 
+  getPlayersForAuction: (userId: number, where: string, offset: number, limit: number, orderBy: string, auctionId: number) => {
+    return `SELECT 
+        p.playerId, p.name,
+        CASE 
+            WHEN p.playerId = ${userId} THEN p.mobile
+            ELSE CONCAT(
+                REPEAT('*', GREATEST(CHAR_LENGTH(p.mobile) - 4, 0)),
+                SUBSTRING(p.mobile, -4)
+            )
+        END AS mobile,
+        p.state, p.district,
+        EXISTS (
+            SELECT 1 
+            FROM auction_category_player acp 
+            WHERE 
+                acp.auctionId = 1020 
+                AND acp.playerId = p.playerId
+        ) AS status
+      FROM players p
+      WHERE
+          ${where ? "" : ` p.state = (
+            SELECT a.state from auctions a where auctionId = ${auctionId} LIMIT 1
+          ) AND `}
+          p.isApproved = 1 
+          AND p.isActive = 1
+          ${where}
+      ${orderBy ? `ORDER BY ${orderBy}` : ''}
+      LIMIT ${limit}
+      OFFSET ${offset}`;
+  },
+
+  getAddedPlayersForAuction: (userId: number, where: string, offset: number, limit: number, auctionId: number) => {
+    return `SELECT 
+        p.playerId, p.name,
+        CASE 
+            WHEN p.playerId = ${userId} THEN p.mobile
+            ELSE CONCAT(
+                REPEAT('*', GREATEST(CHAR_LENGTH(p.mobile) - 4, 0)),
+                SUBSTRING(p.mobile, -4)
+            )
+        END AS mobile,
+        p.state, p.district, acp.baseBid,
+        acp.star as isActive,
+        acp.isApproved AS status
+      FROM auction_category_player acp
+      FORCE INDEX (idx_auction_player)
+      INNER JOIN players p ON acp.playerId = p.playerId
+      WHERE
+        acp.auctionId = ${auctionId}
+        ${where}
+      LIMIT ${limit}
+      OFFSET ${offset}`;
+  },
+
   getCountPlayers: (userId: number, where: string, isGlobalSearch: boolean) => {
     return `SELECT count(*) as total
       FROM players p
@@ -97,6 +151,20 @@ const queries = {
                   AND r.name IN ('SUPER_ADMIN', 'ADMIN')
               )`
         } ${where}
+      `;
+  },
+
+  getCountPlayersForAuction: (auctionId: number, where: string) => {
+    return `
+      SELECT  count(*) as total
+      FROM players p
+      WHERE
+          ${where ? "" : ` p.state = (
+            SELECT a.state from auctions a where auctionId = ${auctionId} LIMIT 1
+          ) AND `}
+          p.isApproved = 1 
+          AND p.isActive = 1
+          ${where}
       `;
   },
 
@@ -157,6 +225,7 @@ const queries = {
       SELECT 
         p.playerId, p.name, p.state, p.district,
         pi.jerseyNumber, pi.tShirtSize, pi.lowerSize, pi.hasCricheroesProfile, 
+        pi.playerRole, pi.battingStyle, pi.bowlingStyle, pi.description,
         pi.isPaidPlayer, p.isVerified,
         p.isApproved, p.isNonPlayer,
         f.url AS image, f.fileId, (p.playerId = ${userId}) AS status
@@ -186,6 +255,7 @@ const queries = {
     SELECT 
      p.playerId, p.name, p.state, p.district,
         pi.jerseyNumber, pi.tShirtSize, pi.lowerSize, pi.hasCricheroesProfile, 
+        pi.playerRole, pi.battingStyle, pi.bowlingStyle, pi.description,
         pi.isPaidPlayer, p.isVerified,
         p.isApproved, p.isNonPlayer,
         f.url AS image, f.fileId, 1 AS status , p.mobile, p.email, pi.pricePerMatch, pi.willJoinAnyOwner
@@ -230,6 +300,10 @@ const queries = {
                 pi.jerseyNumber AS "Jersey Number",
                 pi.tShirtSize AS "T-Shirt Size",
                 pi.lowerSize AS "Lower Size",
+                pi.playerRole AS "Player Role",
+                pi.battingStyle AS "Batting Style", 
+                pi.bowlingStyle AS "Bowling Style", 
+                pi.description AS "Player Description",
                 CASE 
                   WHEN pi.hasCricheroesProfile THEN 'True'
                   ELSE 'False'
@@ -264,7 +338,50 @@ const queries = {
 };
 
 export const publicPlayerQueries = {
-  getFileUrl: `select url from files where fileId =?`
+  getFileUrl: `select url from files where fileId =?`,
+  getPlayersForOwner: `SELECT 
+        p.playerId, p.name,
+        CASE 
+            WHEN p.playerId = ? THEN p.mobile
+            ELSE CONCAT(
+                REPEAT('*', GREATEST(CHAR_LENGTH(p.mobile) - 4, 0)),
+                SUBSTRING(p.mobile, -4)
+            )
+        END AS mobile,
+        p.state, p.district
+      FROM players p
+      WHERE 
+        p.state = (
+          SELECT a.state from auctions a where auctionId = ? LIMIT 1
+        )
+        AND p.isApproved = 1 
+        AND p.isActive = 1
+        AND NOT EXISTS (
+            SELECT 1 FROM team_owner tow
+            WHERE tow.teamId = ?
+              AND tow.ownerId = p.playerId
+        )
+      LIMIT 200`,
+    getPlayersForOwnerByName: `SELECT 
+        p.playerId, p.name,
+        CASE 
+            WHEN p.playerId = ? THEN p.mobile
+            ELSE CONCAT(
+                REPEAT('*', GREATEST(CHAR_LENGTH(p.mobile) - 4, 0)),
+                SUBSTRING(p.mobile, -4)
+            )
+        END AS mobile,
+        p.state, p.district
+      FROM players p
+      WHERE p.isApproved = 1 
+        AND p.isActive = 1
+        AND NOT EXISTS (
+            SELECT 1 FROM team_owner tow
+            WHERE tow.teamId = ?
+              AND tow.ownerId = p.playerId
+        )
+        AND p.name LIKE CONCAT('%', ?, '%')
+      LIMIT 100`
 }
 
 export class PlayerQueries {
@@ -318,6 +435,28 @@ export class PlayerQueries {
                OR p.email LIKE '%${search}%' 
                OR p.mobile LIKE '%${search}%') `;
     }
+    return where;
+  }
+
+  private static buildWhereClauseForAuction(search: string): string {
+    let where = "";
+    if (search) {
+      where += ` AND (p.name LIKE '%${search}%' 
+               OR p.email LIKE '%${search}%' 
+               OR p.mobile LIKE '%${search}%') `;
+    }
+
+    return where;
+  }
+
+  private static buildWhereClauseForPlayerInAuction(search: string): string {
+    let where = "";
+    if (search) {
+      where += ` AND (p.name LIKE '%${search}%' 
+               OR p.email LIKE '%${search}%' 
+               OR p.mobile LIKE '%${search}%') `;
+    }
+
     return where;
   }
 
@@ -383,4 +522,32 @@ export class PlayerQueries {
   public static getPlayerForExport = (role: PlayerRole, playerIds: number[]) => {
     return queries.getPlayersForExport(role, playerIds.join());
   };
+
+  public static getPlayersForAuction = (
+    userId: number,
+    search: string,
+    offset: number,
+    limit: number,
+    auctionId: number,
+  ) => {
+    const where = this.buildWhereClauseForAuction(search);
+    return queries.getPlayersForAuction(userId, where, offset, limit, '', auctionId);
+  };
+
+  public static getPlayersCountForAuction = (auctionId: number, search: string) => {
+    const where = this.buildWhereClauseForAuction(search);
+    return queries.getCountPlayersForAuction(auctionId, where);
+  };
+
+  public static getAddedPlayersForAuction = (
+    userId: number,
+    search: string,
+    offset: number,
+    limit: number,
+    auctionId: number,
+  ) => {
+    const where = this.buildWhereClauseForPlayerInAuction(search);
+    return queries.getAddedPlayersForAuction(userId, where, offset, limit, auctionId);
+  };
+
 }

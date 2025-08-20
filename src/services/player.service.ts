@@ -3,6 +3,7 @@ import { PlayerQueries, publicPlayerQueries } from "../queries/player.queries";
 import { Player } from "../types/player.types";
 import { RowDataPacket } from "mysql2";
 import { PlayerRole } from "../constants/roles.constants";
+import { AuctionQueries } from "../queries/auction.queries";
 
 export class PlayerService {
   async getPlayers(
@@ -13,32 +14,15 @@ export class PlayerService {
     search: string = "",
     approved: string = "all",
     sort: string,
-    active: string,
+    active: string
   ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
 
     const [result, totalResult] = await Promise.all([
       pool.execute<RowDataPacket[]>(
-        PlayerQueries.getPlayers(
-          role,
-          userId,
-          search,
-          approved,
-          offset,
-          limit,
-          sort,
-          active
-        )
+        PlayerQueries.getPlayers(role, userId, search, approved, offset, limit, sort, active)
       ),
-      pool.execute<RowDataPacket[]>(
-        PlayerQueries.getPlayersCount(
-          role,
-          userId,
-          search,
-          approved,
-          active
-        )
-      ),
+      pool.execute<RowDataPacket[]>(PlayerQueries.getPlayersCount(role, userId, search, approved, active)),
     ]);
 
     const totalPlayers = totalResult[0][0].total;
@@ -47,24 +31,20 @@ export class PlayerService {
     return {
       players: result[0].length > 0 ? (result[0] as Player[]) : [],
       total: totalPlayers,
-      hasMore
+      hasMore,
     };
   }
 
   async getAdmins(
     page: number = 1,
     limit: number,
-    search: string = "",
+    search: string = ""
   ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
     const offset = (page - 1) * limit;
 
     const [result, totalResult] = await Promise.all([
-      pool.execute<RowDataPacket[]>(
-        PlayerQueries.getAdmins(search, offset, limit)
-      ),
-      pool.execute<RowDataPacket[]>(
-        PlayerQueries.getAdminsCount(search)
-      ),
+      pool.execute<RowDataPacket[]>(PlayerQueries.getAdmins(search, offset, limit)),
+      pool.execute<RowDataPacket[]>(PlayerQueries.getAdminsCount(search)),
     ]);
 
     const totalPlayers = totalResult[0][0].total;
@@ -73,7 +53,7 @@ export class PlayerService {
     return {
       players: result[0].length > 0 ? (result[0] as Player[]) : [],
       total: totalPlayers,
-      hasMore
+      hasMore,
     };
   }
 
@@ -83,7 +63,7 @@ export class PlayerService {
     return result.length > 0 ? (result as Player[]) : [];
   }
 
-  async getPlayerById(role: PlayerRole, playerId: number,  isActive: boolean, userId: number): Promise<Player | null> {
+  async getPlayerById(role: PlayerRole, playerId: number, isActive: boolean, userId: number): Promise<Player | null> {
     const [result] = await pool.execute<RowDataPacket[]>(
       PlayerQueries.getPlayerById(role, playerId, isActive, userId),
       [userId]
@@ -93,11 +73,70 @@ export class PlayerService {
   }
 
   async getImageUrl(fileId: number): Promise<string> {
-    const [result] = await pool.execute<RowDataPacket[]>(
-      publicPlayerQueries.getFileUrl,
-      [fileId]
-    );
+    const [result] = await pool.execute<RowDataPacket[]>(publicPlayerQueries.getFileUrl, [fileId]);
 
-    return result.length > 0 ? result[0].url : '';
+    return result.length > 0 ? result[0].url : "";
+  }
+
+  async getPlayerForTeamOwner(userId: number, auctionId: number, teamId: number): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(publicPlayerQueries.getPlayersForOwner, [userId, auctionId, teamId]);
+    return result.length > 0 ? (result as Player[]) : [];
+  }
+
+  async getPlayerForTeamOwnerByText(userId: number, teamId: number, searchText: string): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(publicPlayerQueries.getPlayersForOwnerByName, [userId, teamId, searchText]);
+    return result.length > 0 ? (result as Player[]) : [];
+  }
+
+  async getPlayersForAuction(
+    userId: number,
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getPlayersForAuction(userId, search, offset, limit, auctionId)
+      ),
+      pool.execute<RowDataPacket[]>(PlayerQueries.getPlayersCountForAuction(auctionId, search)),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
+  }
+
+  async getAddedPlayersForAuction(
+    userId: number,
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getAddedPlayersForAuction(userId, search, offset, limit, auctionId)
+      ),
+      pool.execute<RowDataPacket[]>(AuctionQueries.getCountAuctionPlayersPending, [auctionId]),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
   }
 }

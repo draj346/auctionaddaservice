@@ -21,6 +21,8 @@ import { NotificationController } from '../controllers/notification.controller';
 import { AuctionController } from '../controllers/auction.controller';
 import { ContactController } from '../controllers/contact.controller';
 import { CommonController } from '../controllers/common.controller';
+import { CategoryController } from '../controllers/category.controller';
+import { TeamsController } from '../controllers/teams.controller';
 
 const router = Router();
 
@@ -96,10 +98,37 @@ router.delete('/auth/auctions/:auctionId/delete', validate(auctionValidation.auc
 router.put('/auth/auctions/:auctionId/approve', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.approveAuction);
 router.put('/auth/auctions/:auctionId/completed', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.updateAuctionCompletionStatus);
 router.get('/auth/auctions/search', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.auctionSearchTextSchema, "query"), AuctionController.getAuctionBySearch);
-router.get('/auth/auctions/:auctionId',validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionById);
 //Contact Message
 router.get('/auth/getUnWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), ContactController.getUnWorkComment);
 router.get('/auth/getWorkComment', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), ContactController.getWorkComment);
 router.get('/auth/updateWorkStatus', CheckPermission([ROLES.ADMIN, ROLES.SUPER_ADMIN] as PlayerRole[]), validate(contactValidation.updateWorkStatusSchema), ContactController.updateWorkStatus);
+//Category
+router.post('/auth/auctions/:auctionId/category/new',  validate(auctionValidation.auctionIdSchema, 'params'), validate(auctionValidation.upsetCategorySchema), CategoryController.upsetCategory);
+router.get('/auth/auctions/:auctionId/categories', validate(auctionValidation.auctionIdSchema, 'params'), CategoryController.getCategoryByAuction);
+router.get('/auth/auctions/:auctionId/categories/:categoryId', validate(auctionValidation.auctionCategoryIdSchema, 'params'), CategoryController.getcategoryById);
+router.delete('/auth/auctions/:auctionId/categories/:categoryId/delete', validate(auctionValidation.auctionCategoryIdSchema, 'params'), CategoryController.deleteCategory);
+router.get('/auth/auctions/:auctionId/teams/:teamId/owner', validate(auctionValidation.auctionTeamIdSchema, 'params'),validate(playerValidation.ownerPaginationSchema, "query"), PlayerController.getOwnerForTeam);
+//Teams
+router.post('/auth/auctions/:auctionId/team/new',  validate(auctionValidation.auctionIdSchema, 'params'), validate(auctionValidation.upsetTeamSchema), TeamsController.upsetTeam);
+router.get('/auth/auctions/:auctionId/teams', validate(auctionValidation.auctionIdSchema, 'params'), TeamsController.getTeamsByAuction);
+router.get('/auth/auctions/:auctionId/teams/:teamId', validate(auctionValidation.auctionTeamIdSchema, 'params'), TeamsController.getTeamById);
+router.delete('/auth/auctions/:auctionId/teams/:teamId/delete', validate(auctionValidation.auctionTeamIdSchema, 'params'), TeamsController.deleteTeam);
+router.post('/auth/team/owner/assign', validate(auctionValidation.assignOwnerToTeamSchema), TeamsController.assignOwnerToTeam);
+router.delete('/auth/team/owner/remove', validate(auctionValidation.removeOwnerFromTeamSchema), TeamsController.removeOwnerFromTeam);
+router.get('/auth/auctions/:auctionId/canAddTeam', validate(auctionValidation.auctionIdSchema, 'params'), TeamsController.canAddTeam);
+router.get('/auth/auctions/:auctionId/playersForAuction', validate(auctionValidation.auctionIdSchema, 'params'), validate(playerValidation.auctionPlayerPaginationSchema, "query"), PlayerController.getPlayersForAuction);
+router.get('/auth/auctions/:auctionId/players/count', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getPendingPlayerCountForAuction);
+router.get('/auth/auctions/:auctionId/players/participants', validate(auctionValidation.auctionIdSchema, 'params'),  validate(playerValidation.auctionPlayerPaginationSchema, "query"), PlayerController.getAddedPlayersForAuction);
+
+//Add Players
+router.post('/auth/auctions/players/add', validate(auctionValidation.updatePlayerToAuctionSchema), AuctionController.addPlayerToAuction);
+router.post('/auth/auctions/players/approve', validate(auctionValidation.approveAuctionForAuctionSchema), AuctionController.approvePlayerForAuction);
+router.post('/auth/auctions/players/sr', CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.approveAuctionForAuctionSchema), AuctionController.starPlayerForAuction);
+router.post('/auth/auctions/players/ur', CheckPermission([ROLES.SUPER_ADMIN] as PlayerRole[]), validate(auctionValidation.approveAuctionForAuctionSchema), AuctionController.unStarPlayerForAuction);
+router.delete('/auth/auctions/players/remove', validate(auctionValidation.updatePlayerToAuctionSchema), AuctionController.removePlayerFromAuction);
+router.post('/auth/auctions/category/players/add', validate(auctionValidation.updatePlayerToAuctionSchema), CategoryController.addPlayerToCategory);
+router.delete('/auth/auctions/category/players/remove', validate(auctionValidation.updatePlayerToAuctionSchema), CategoryController.removePlayerFromCategory);
+
+router.get('/auth/auctions/:auctionId',validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionById);
 
 export default router;

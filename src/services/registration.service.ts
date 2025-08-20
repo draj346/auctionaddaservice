@@ -77,6 +77,10 @@ export class RegistrationService {
       data.isPaidPlayer === undefined ? null : data.isPaidPlayer,
       data.pricePerMatch || null,
       data.willJoinAnyOwner === undefined ? null : data.willJoinAnyOwner,
+      data.playerRole || null,
+      data.battingStyle || null,
+      data.bowlingStyle || null,
+      data.description || null
     ]);
 
     if (result.affectedRows > 0) {
@@ -106,6 +110,10 @@ export class RegistrationService {
       data.isPaidPlayer === undefined ? null : data.isPaidPlayer,
       data.pricePerMatch || null,
       data.willJoinAnyOwner === undefined ? null : data.willJoinAnyOwner,
+       data.playerRole || null,
+      data.battingStyle || null,
+      data.bowlingStyle || null,
+      data.description || null
     ]);
 
     if (result.affectedRows > 0) {
@@ -188,6 +196,10 @@ export class RegistrationService {
         data.isPaidPlayer === undefined ? null : data.isPaidPlayer,
         data.pricePerMatch || null,
         data.willJoinAnyOwner === undefined ? null : data.willJoinAnyOwner,
+        data.playerRole || null,
+        data.battingStyle || null,
+        data.bowlingStyle || null,
+        data.description || null
       ]);
 
       return {
@@ -275,6 +287,10 @@ export class RegistrationService {
         data["Is Paid Player"] === undefined ? null : data["Is Paid Player"],
         data["Price Per Match"] || null,
         data["Will Join Any Owner"] === undefined ? null : data["Will Join Any Owner"],
+        data["Player Role"] || null,
+        data["Batting Style"] || null,
+        data["Bowling Style"] || null,
+        data["Description"] || null,
       ]);
 
       return {

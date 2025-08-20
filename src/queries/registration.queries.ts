@@ -6,7 +6,7 @@ export const RegistrationQueries = {
   insertPlayer: `INSERT INTO players (name, mobile, email, state, district) VALUES (?, ?, ?, ?, ?)`,
   findNotRegisteredUserById: `SELECT count(*) as count from players WHERE playerId = ? AND isSubmitted = 0`,
   addPlayerInformation: `INSERT INTO player_informations (playerId, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
-                    isPaidPlayer, pricePerMatch, willJoinAnyOwner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+                    isPaidPlayer, pricePerMatch, willJoinAnyOwner, playerRole, battingStyle, bowlingStyle, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   setPlayerSubmitted: ` UPDATE players SET isSubmitted = ? WHERE playerId = ?`,
   deletePlayerInformation: `DELETE FROM player_informations where playerId = ?`,
   updateImage: `INSERT INTO player_images (playerId, imageId) 
@@ -15,7 +15,7 @@ export const RegistrationQueries = {
                   imageId = ?;`,
   createPlayer: `INSERT INTO players (name, mobile, email, state, district, isSubmitted) VALUES (?, ?, ?, ?, ?, ?)`,
   updatePlayerInformation: `INSERT INTO player_informations (playerId, jerseyNumber, tShirtSize, lowerSize, hasCricheroesProfile,
-                    isPaidPlayer, pricePerMatch, willJoinAnyOwner) VALUES (?, ?, ?, ?, ?, ?, ?, ?)  
+                    isPaidPlayer, pricePerMatch, willJoinAnyOwner, playerRole, battingStyle, bowlingStyle, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  
                     ON DUPLICATE KEY UPDATE 
                       jerseyNumber = VALUES(jerseyNumber),
                       tShirtSize = VALUES(tShirtSize),
@@ -23,6 +23,10 @@ export const RegistrationQueries = {
                       hasCricheroesProfile = VALUES(hasCricheroesProfile),
                       isPaidPlayer = VALUES(isPaidPlayer),
                       pricePerMatch = VALUES(pricePerMatch),
+                      playerRole = VALUES(playerRole),
+                      battingStyle = VALUES(battingStyle),
+                      bowlingStyle = VALUES(bowlingStyle),
+                      description = VALUES(description),
                       willJoinAnyOwner = VALUES(willJoinAnyOwner)`,
   updatePlayerAddress: `UPDATE players SET isSubmitted = 1, state=?, district=?  WHERE playerId = ?`,
   deletePlayer: `UPDATE players SET isActive = 0 WHERE playerId = ?`,
