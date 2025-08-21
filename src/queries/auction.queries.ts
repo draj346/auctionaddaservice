@@ -128,7 +128,7 @@ export const AuctionQueries = {
                              categoryHighestBid, increments from auction_category WHERE auctionId = ? AND categoryId = ?`,
   getPlayerByCategoryId: `Select playerId FROM auction_category_player WHERE categoryId = ? AND auctionId = ?`,
   deleteCategoryById: `CALL DeleteCategory(?, ?, ?, ?)`,
-  updatePlayerToAuction: `CALL ManageAuctionPlayers(?, ?, ?, ?, ?, ?)`,
+  updatePlayerToAuction: `CALL ManageAuctionPlayers(?, ?, ?, ?, ?, ?, ?)`,
   upsetWishlist: `INSERT INTO team_wishlist (
                     id,
                     teamId,
@@ -141,7 +141,17 @@ export const AuctionQueries = {
                     tag = VALUES(tag);`,
   deleteFromWhislist: `DELETE FROM team_wishlist WHERE teamId = ? and playerId = ?`,
   getTeamOwnerInfo: `SELECT t.tag, p.name, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.teamId = ?`,
-  getCountAuctionPlayersPending: `select count(*) as total from auction_category_player where auctionId = ?`
+  getCountAuctionPlayersPending: `select count(*) as total from auction_category_player where auctionId = ?`,
+  getAuctionDetailByCode: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
+                code, isLive, isCompleted, pointPerTeam, baseBid, paymentStatus, baseIncreaseBy, qrCodeId, auctionRule as rule, isPaymentInCompanyAccount from auctions where isActive is True and code = ?;`,
+  getMyAuctions: `select 
+                    a.name, a.code, a.auctionId,
+                    CONCAT(a.district, ' (', a.state, ')') as location,
+                    DATE_FORMAT(a.startDate, '%d-%m-%Y') as startDate
+                  from auctions a 
+                  LEFT JOIN auction_category_player acp ON a.auctionId = acp.auctionId
+                  WHERE acp.playerId =?`,
+  getAuctionStatusForJoin: `SELECT isApproved from auction_category_player acp WHERE acp.playerId = ? AND acp.auctionId = ?`
 };
 
 export const MultiUserAuctionQueries = {

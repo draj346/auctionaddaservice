@@ -56,6 +56,10 @@ export const auctionSearchTextSchema = Joi.object<IAuctionAttributesIdsSchema>({
   searchText: Joi.string().trim().required(),
 });
 
+export const auctionCodeSchema = Joi.object<IAuctionAttributesIdsSchema>({
+  code: Joi.string().trim().required(),
+});
+
 export const teamIdSchema = Joi.object<IAuctionAttributesIdsSchema>({
   teamId: Joi.number().integer().min(1).required().messages({
     "number.base": "Team ID must be a number",
@@ -68,6 +72,10 @@ export const teamIdSchema = Joi.object<IAuctionAttributesIdsSchema>({
 export const auctionCategoryIdSchema = Joi.object<IAuctionAttributesIdsSchema>({
   categoryId: Joi.number().min(1).required(),
   auctionId: Joi.number().integer().min(1).required(),
+});
+
+export const auctionFileIdSchema = Joi.object<IAuctionAttributesIdsSchema>({
+  fileId: Joi.number().integer().min(1).required(),
 });
 
 export const auctionTeamIdSchema = Joi.object<IAuctionAttributesIdsSchema>({
@@ -137,6 +145,11 @@ export const updatePlayerToAuctionSchema = Joi.object<IManageAuction>({
   playerIds: Joi.array().items(Joi.number().integer().min(1).required()),
   baseBid: Joi.number().min(1).max(999999999999).required().allow(null),
   isApproved: Joi.boolean().allow(null).optional(),
+});
+
+export const JoinAuctionSchema = Joi.object<IManageAuction>({
+  auctionId: Joi.number().min(1).required(),
+  fileId: Joi.number().min(1).required().allow(null),
 });
 
 export const updatePlayerToCategorySchema = Joi.object<IManageAuction>({

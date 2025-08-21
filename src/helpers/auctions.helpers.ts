@@ -6,8 +6,14 @@ export class AuctionsHelper {
     return roleInitial + nameInitial + auctionId.toString() + secondNameInitial;
   }
 
-  static getNotificationJSON(name: string, state?: string, code?: string, categoryName?: string): JSON {
-    const result: { name?: string; state?: string; code?: string; categoryName?: string } = {};
+  static getNotificationJSON(
+    name: string,
+    state?: string,
+    code?: string,
+    categoryName?: string,
+    fullName?: string
+  ): JSON {
+    const result: { name?: string; state?: string; code?: string; categoryName?: string; fullName?: string } = {};
     if (name) {
       result.name = name;
     }
@@ -20,6 +26,9 @@ export class AuctionsHelper {
     }
     if (code) {
       result.code = code;
+    }
+    if (fullName) {
+      result.fullName = fullName;
     }
     return result as unknown as JSON;
   }

@@ -127,7 +127,7 @@ const queries = {
         END AS mobile,
         p.state, p.district, acp.baseBid,
         acp.star as isActive,
-        acp.isApproved AS status
+        acp.isApproved AS status, acp.paymentId as fileId
       FROM auction_category_player acp
       FORCE INDEX (idx_auction_player)
       INNER JOIN players p ON acp.playerId = p.playerId

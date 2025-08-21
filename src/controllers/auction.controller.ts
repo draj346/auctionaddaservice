@@ -476,6 +476,91 @@ export class AuctionController {
     }
   };
 
+  static joinPlayerToAuction = async (req: Request, res: Response) => {
+    try {
+      const data: IManageAuction = {
+        ...req.body,
+        operation: "ASSIGN_SELF" as IManageAuctionOperation,
+        playerIds: [req.userId],
+      };
+      const playerId = await AuctionService.isValidAuctionPlayerIdForEdit(data.auctionId);
+      if (!playerId) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      const response = await AuctionService.updatePlayerToAuction(data);
+      if (response) {
+        const auctionResponse: any = {};
+        if (response.status) {
+          NotificationService.createNotification(
+            playerId,
+            NotificationMessage.PLAYER_JOINED_AUCTION,
+            NOTIFICATIONS.PLAYER_JOINED as NotificationType,
+            req.userId,
+            req.role,
+            AuctionsHelper.getNotificationJSON(response.name || "", "", "", "", req.name)
+          );
+
+          if (response.isNotFound !== undefined) auctionResponse.isNotFound = response.isNotFound;
+          if (response.status !== undefined) auctionResponse.status = response.status;
+          if (response.isAccessDenied !== undefined) auctionResponse.isAccessDenied = response.isAccessDenied;
+          if (response.isLive !== undefined) auctionResponse.isLive = response.isLive;
+          if (response.isError !== undefined) auctionResponse.isError = response.isError;
+
+          ApiResponse.success(res, auctionResponse, 200, "Successfully added to Auction!!");
+        } else {
+          ApiResponse.error(res, "Unable to add to auction. Please try again", 200, { isError: true });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static removeSelfFromAuction = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const data = {
+        auctionId,
+        operation: "REMOVE_AUCTION" as IManageAuctionOperation,
+        playerIds: [req.userId],
+      };
+      const playerId = await AuctionService.isValidAuctionPlayerIdForEdit(data.auctionId);
+      if (!playerId) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      const response = await AuctionService.updatePlayerToAuction(data as unknown as IManageAuction);
+      if (response) {
+        const auctionResponse: any = {};
+        if (response.status) {
+          NotificationService.createNotification(
+            playerId,
+            NotificationMessage.PLAYER_REMOVED_SELF_AUCTION,
+            NOTIFICATIONS.PLAYER_EXIT as NotificationType,
+            req.userId,
+            req.role,
+            AuctionsHelper.getNotificationJSON(response.name || "", "", "", "", req.name)
+          );
+
+          if (response.isNotFound !== undefined) auctionResponse.isNotFound = response.isNotFound;
+          if (response.status !== undefined) auctionResponse.status = response.status;
+          if (response.isAccessDenied !== undefined) auctionResponse.isAccessDenied = response.isAccessDenied;
+          if (response.isLive !== undefined) auctionResponse.isLive = response.isLive;
+          if (response.isError !== undefined) auctionResponse.isError = response.isError;
+
+          ApiResponse.success(res, auctionResponse, 200, "Successfully exited from Auction!!");
+        } else {
+          ApiResponse.error(res, "Unable to remove from auction. Please try again", 200, { isError: true });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
   static removePlayerFromAuction = async (req: Request, res: Response) => {
     try {
       const data: IManageAuction = {
@@ -547,7 +632,7 @@ export class AuctionController {
         }
       }
       const response = await AuctionService.getPendingPlayerCountForAuction(auctionId);
-      ApiResponse.success(res, {total: response}, 200, "Pending Players for Auction!!");
+      ApiResponse.success(res, { total: response }, 200, "Pending Players for Auction!!");
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
@@ -590,5 +675,35 @@ export class AuctionController {
     }
 
     return auctionResponse;
+  };
+
+  static getAuctionByCodeForJoin = async (req: Request, res: Response) => {
+    try {
+      const data = req.query as unknown as IAuctionAttributesIdsSchema;
+      let auctionResponse = await AuctionService.getAuctionDetailsByCode(data.code || "", req.userId);
+      if (auctionResponse) {
+        auctionResponse = await this.updateFilePath(auctionResponse);
+        ApiResponse.success(res, auctionResponse, 200, "Auction Details!!");
+      } else {
+        ApiResponse.error(res, "Unable to retrieve Auction. Please try again", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static getMyAuctions = async (req: Request, res: Response) => {
+    try {
+      let auctionResponse = await AuctionService.getMyAuctions(req.userId);
+      if (auctionResponse) {
+        ApiResponse.success(res, auctionResponse, 200, "Auction Details!!");
+      } else {
+        ApiResponse.error(res, "Unable to retrieve Auction. Please try again", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
   };
 }

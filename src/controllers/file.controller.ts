@@ -2,13 +2,13 @@ import { Request, Response } from "express";
 import { ApiResponse } from "../utils/apiResponse";
 import { AuthService } from "../services/auth.service";
 import { FileService } from "../services/file.service";
-import { FILE_UPLOAD_FOLDER } from "../config/env";
-import { upload } from "../utils/multerConfig";
+import { FILE_UPLOAD_FOLDER, PAYMENT_FILE_UPLOAD_FOLDER } from "../config/env";
+import { paymentUpload, upload } from "../utils/multerConfig";
 import { RegistrationService } from "../services/registration.service";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionService } from "../services/auction.service";
-import { AuctionFileData } from "../types/file.types";
+import { AuctionFileData, JoiningAuctionFileData } from "../types/file.types";
 import { AuctionsHelper } from "../helpers/auctions.helpers";
 
 const fileService = new FileService();
@@ -142,7 +142,8 @@ export class FileController {
         const imagePath = req.file.path;
         const url = `${FILE_UPLOAD_FOLDER}${req.file.filename}`;
         let playerId = req.userId;
-        let name = "", code = "";
+        let name = "",
+          code = "";
 
         if (auctionId) {
           const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
@@ -184,7 +185,7 @@ export class FileController {
                 req.role,
                 AuctionsHelper.getNotificationJSON(name, "", code)
               );
-            } else if(type === "qrcode") {
+            } else if (type === "qrcode") {
               await NotificationService.createNotification(
                 playerId,
                 playerId === req.userId
@@ -209,6 +210,68 @@ export class FileController {
       ApiResponse.error(res, "Uploading failed. Please try again.", 500, {
         isError: true,
       });
+    }
+  };
+
+  static uploadFileForJoiningAuctionSchema = async (req: Request, res: Response) => {
+    try {
+      paymentUpload.single("image")(req, res, async (err) => {
+        if (err) {
+          return ApiResponse.error(res, err.message, 400, {
+            isUpdateFailed: true,
+          });
+        }
+
+        if (!req.file) {
+          return ApiResponse.error(res, "No image uploaded", 400, {
+            isNotFound: true,
+          });
+        }
+        const { auctionId } = req.body as JoiningAuctionFileData;
+        const imagePath = req.file.path;
+        const url = `${PAYMENT_FILE_UPLOAD_FOLDER}${req.file.filename}`;
+
+        if (auctionId) {
+          const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+          if (!auctionInfo?.playerId) {
+            await fileService.deleteUploadedFile(imagePath);
+            return ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
+          }
+        }
+
+        const result = await fileService.uploadFile({
+          name: req.file.filename,
+          path: imagePath,
+          url,
+        });
+        if (result) {
+          return ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
+        } else {
+          return ApiResponse.error(res, "Upload failed", 200, {
+            isUpdateFailed: true,
+          });
+        }
+      });
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Uploading failed. Please try again.", 500, {
+        isError: true,
+      });
+    }
+  };
+
+  static getPaymentFilePath = async (req: Request, res: Response) => {
+    try {
+      const fileId = parseInt(req.params.fileId);
+      const files = await fileService.getFile(fileId);
+      if (files) {
+        ApiResponse.success(res, { path: files.url }, 200, "file retrieve successfully!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again.", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
   };
 }

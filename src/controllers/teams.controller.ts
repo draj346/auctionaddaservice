@@ -76,12 +76,6 @@ export class TeamsController {
   static getTeamsByAuction = async (req: Request, res: Response) => {
     try {
       const auctionId = parseInt(req.params.auctionId);
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
       let teamResponse = await AuctionService.getTeamsByAuctionId(auctionId);
       if (teamResponse) {
         teamResponse = await this.updateFilePaths(teamResponse);
@@ -145,12 +139,6 @@ export class TeamsController {
     try {
       const auctionId = parseInt(req.params.auctionId);
       const teamId = parseInt(req.params.teamId);
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
       let teamResponse = await AuctionService.getTeamById(auctionId, teamId);
       let teamOwnerResponse = await AuctionService.getTeamOwnerInfo(teamId);
       if (teamResponse) {

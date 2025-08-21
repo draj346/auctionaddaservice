@@ -65,12 +65,6 @@ export class CategoryController {
   static getCategoryByAuction = async (req: Request, res: Response) => {
     try {
       const auctionId = parseInt(req.params.auctionId);
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
       let auctionResponse = await AuctionService.getCategoriesByAuctionId(auctionId);
       if (auctionResponse) {
         ApiResponse.success(res, auctionResponse, 200, "Auction Category retrieve successfully!!");
@@ -132,12 +126,6 @@ export class CategoryController {
     try {
       const auctionId = parseInt(req.params.auctionId);
       const categoryId = parseInt(req.params.categoryId);
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
       let auctionResponse = await AuctionService.getCategoryById(auctionId, categoryId);
       if (auctionResponse) {
         ApiResponse.success(res, auctionResponse, 200, "Category Details!!");

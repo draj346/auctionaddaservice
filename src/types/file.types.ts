@@ -12,6 +12,11 @@ export interface AuctionFileData {
   showNotification?: boolean;
 }
 
+export interface JoiningAuctionFileData {
+  image: string;
+  auctionId: number;
+}
+
 export interface FileSchemaProps {
   name: string;
   path: string;

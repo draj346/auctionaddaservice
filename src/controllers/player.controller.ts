@@ -213,13 +213,6 @@ export class PlayerController {
     try {
       const auctionId = parseInt(req.params.auctionId);
       const data = req.query as unknown as AuctionPlayerPaginationSchema;
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        const isAuctionValid = await AuctionService.isValidAuctionForAccess(auctionId, req.userId);
-        if (!isAuctionValid) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
-
       const page = data.page || 1;
       const search = data.search || "";
       const limit = 100;
@@ -276,18 +269,6 @@ export class PlayerController {
       const auctionId = parseInt(req.params.auctionId);
       const categoryId = parseInt(req.params.categoryId);
       const data = req.query as unknown as AuctionPlayerPaginationSchema;
-
-      const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
-      if (!auctionInfo) {
-        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-      }
-
-      if (!RoleHelper.isAdminAndAbove(req.role)) {
-        if (auctionInfo.playerId !== req.userId) {
-          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
-        }
-      }
-
       const page = data.page || 1;
       const search = data.search || "";
       const limit = 100;

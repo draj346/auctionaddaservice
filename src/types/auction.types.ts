@@ -26,6 +26,8 @@ export interface IAuctionAttributesIdsSchema {
   ownerId?: number;
   playerId?: number;
   searchText?: string;
+  code?: string;
+  fileId?: number;
 }
 
 export interface IAuctionDetails {
@@ -53,6 +55,16 @@ export interface IAuctionDetails {
   isPaymentInCompanyAccount: boolean;
   rule: string;
   playerId?: number;
+  status?: boolean;
+  isApproved?: boolean;
+}
+
+export interface IMyAuctions {
+  auctionId: number;
+  name: string;
+  code: string;
+  location: string;
+  startDate: string;
 }
 
 export interface IAuctionCopy {
@@ -142,7 +154,7 @@ export interface ICategoryDetails {
   increments: IIncrements[];
 }
 
-export type IManageAuctionOperation = "ASSIGN_AUCTION" | "ASSIGN_CATEGORY" | "REMOVE_CATEGORY" | "REMOVE_AUCTION";
+export type IManageAuctionOperation = "ASSIGN_AUCTION" | "ASSIGN_CATEGORY" | "REMOVE_CATEGORY" | "REMOVE_AUCTION" | "ASSIGN_SELF";
 
 export interface IManageAuction {
   operation: IManageAuctionOperation;
@@ -151,6 +163,7 @@ export interface IManageAuction {
   playerIds: number[];
   baseBid: number;
   isApproved: boolean;
+  fileId: number | null;
 }
 
 export interface IApprovePlayerForAuction {

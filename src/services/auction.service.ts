@@ -14,6 +14,7 @@ import {
   ICreateCategory,
   ICreateTeam,
   IManageAuction,
+  IMyAuctions,
   IRemoveOwner,
   ITeamDetails,
   ITeamOwner,
@@ -282,10 +283,11 @@ export class AuctionService {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.updatePlayerToAuction, [
       playerInfo.operation,
       playerInfo.auctionId,
-      playerInfo.categoryId,
+      playerInfo.categoryId || null,
       JSON.stringify(playerInfo.playerIds),
       playerInfo.baseBid || null,
       playerInfo.isApproved || false,
+      playerInfo.fileId || null
     ]);
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
@@ -337,5 +339,36 @@ export class AuctionService {
   public static async getPendingPlayerCountForAuction(auctionId: number): Promise<number> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getCountAuctionPlayersPending, [auctionId]);
     return result?.length > 0 ? result[0].total : 0;
+  }
+
+  public static async getAuctionDetailsByCode(code: string, userId: number): Promise<IAuctionDetails | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctionDetailByCode, [code]);
+
+    if (result?.length > 0) {
+      const auctionDetails = result[0] as IAuctionDetails;
+      const [joinAuctionStatus] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctionStatusForJoin, [
+        userId,
+        auctionDetails.auctionId,
+      ]);
+
+      if (joinAuctionStatus?.length > 0) {
+        auctionDetails.status = true;
+        auctionDetails.isApproved = joinAuctionStatus[0].isApproved;
+
+        return auctionDetails;
+      } else {
+        auctionDetails.status = false;
+        auctionDetails.isApproved = false;
+
+        return auctionDetails;
+      }
+    }
+
+    return null;
+  }
+
+  public static async getMyAuctions(userId: number): Promise<IMyAuctions[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getMyAuctions, [userId]);
+    return result?.length > 0 ? (result as IMyAuctions[]) : null;
   }
 }

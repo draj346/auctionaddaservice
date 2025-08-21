@@ -106,6 +106,7 @@ CREATE TABLE auction_category_player (
   status ENUM('SOLD', 'AVAILABLE', 'UNSOLD') DEFAULT NULL,
   star BOOLEAN DEFAULT FALSE,
   isApproved BOOLEAN DEFAULT FALSE,
+  paymentId INT DEFAULT NULL,
   INDEX idx_category (categoryId),
   INDEX idx_auction_player (auctionId, playerId, categoryId),
   UNIQUE KEY unique_auction_player (auctionId, playerId),

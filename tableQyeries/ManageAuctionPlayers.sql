@@ -1,12 +1,13 @@
 DELIMITER $$
 
 CREATE PROCEDURE ManageAuctionPlayers(
-    IN p_operation ENUM('ASSIGN_AUCTION', 'ASSIGN_CATEGORY', 'REMOVE_CATEGORY', 'REMOVE_AUCTION'),
+    IN p_operation ENUM('ASSIGN_AUCTION', 'ASSIGN_CATEGORY', 'REMOVE_CATEGORY', 'REMOVE_AUCTION', 'ASSIGN_SELF'),
     IN p_auction_id INT,
     IN p_category_id INT,
     IN p_player_ids JSON,
     IN p_base_bid INT,
-    IN p_is_approved BOOLEAN
+    IN p_is_approved BOOLEAN,
+    IN p_payment_id INT
 )
 BEGIN
     DECLARE v_auction_owner_id INT DEFAULT NULL;
@@ -71,6 +72,20 @@ BEGIN
                 ) AS jt
                 ON DUPLICATE KEY UPDATE 
                     baseBid = VALUES(baseBid);
+                
+                IF ROW_COUNT() = 0 AND JSON_LENGTH(p_player_ids) > 0 THEN
+                    SET v_success = FALSE;
+                END IF;
+
+            WHEN 'ASSIGN_SELF' THEN
+                INSERT IGNORE INTO auction_category_player (auctionId, playerId, paymentId)
+                SELECT p_auction_id, player_id, p_payment_id
+                FROM JSON_TABLE(
+                    p_player_ids,
+                    '$[*]' COLUMNS(player_id INT PATH '$')
+                ) AS jt
+                ON DUPLICATE KEY UPDATE 
+                    paymentId = VALUES(paymentId);
                 
                 IF ROW_COUNT() = 0 AND JSON_LENGTH(p_player_ids) > 0 THEN
                     SET v_success = FALSE;
