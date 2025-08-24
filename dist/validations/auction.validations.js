@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.categoryIdSchema = exports.teamIdSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
+exports.approveAuctionForAuctionSchema = exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToCategorySchema = exports.JoinAuctionSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.auctionTeamIdSchema = exports.auctionFileIdSchema = exports.auctionCategoryIdSchema = exports.teamIdSchema = exports.auctionCodeSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.upsetAuctionSchema = joi_1.default.object({
     auctionId: joi_1.default.number().required().allow(null),
@@ -16,16 +16,14 @@ exports.upsetAuctionSchema = joi_1.default.object({
         .pattern(/^(0[1-9]|[12][0-9]|3[01])-(0[1-9]|1[0-2])-\d{4}$/)
         .required()
         .custom((value, helpers) => {
-        const [day, month, year] = value.split('-').map(Number);
+        const [day, month, year] = value.split("-").map(Number);
         const date = new Date(year, month - 1, day);
-        if (date.getDate() !== day ||
-            date.getMonth() + 1 !== month ||
-            date.getFullYear() !== year) {
-            return helpers.error('date.invalid');
+        if (date.getDate() !== day || date.getMonth() + 1 !== month || date.getFullYear() !== year) {
+            return helpers.error("date.invalid");
         }
         return date;
-    }, 'Date Validation'),
-    startTime: joi_1.default.string().trim().required().allow(null, ''),
+    }, "Date Validation"),
+    startTime: joi_1.default.string().trim().required().allow(null, ""),
     maxPlayerPerTeam: joi_1.default.number().max(30).required(),
     minPlayerPerTeam: joi_1.default.number().min(1).required().allow(null),
     pointPerTeam: joi_1.default.number().min(1).max(9999999999).required(),
@@ -33,7 +31,7 @@ exports.upsetAuctionSchema = joi_1.default.object({
     baseIncreaseBy: joi_1.default.number().min(1).max(999999).required(),
     qrCodeId: joi_1.default.number().required().allow(null),
     isPaymentInCompanyAccount: joi_1.default.bool().required().allow(null),
-    rule: joi_1.default.string().trim().required().allow(null, ''),
+    rule: joi_1.default.string().trim().required().allow(null, ""),
 });
 exports.auctionIdSchema = joi_1.default.object({
     auctionId: joi_1.default.number().integer().min(1).required().messages({
@@ -46,6 +44,9 @@ exports.auctionIdSchema = joi_1.default.object({
 exports.auctionSearchTextSchema = joi_1.default.object({
     searchText: joi_1.default.string().trim().required(),
 });
+exports.auctionCodeSchema = joi_1.default.object({
+    code: joi_1.default.string().trim().required(),
+});
 exports.teamIdSchema = joi_1.default.object({
     teamId: joi_1.default.number().integer().min(1).required().messages({
         "number.base": "Team ID must be a number",
@@ -54,16 +55,24 @@ exports.teamIdSchema = joi_1.default.object({
         "any.required": "Team ID is required",
     }),
 });
-exports.categoryIdSchema = joi_1.default.object({
+exports.auctionCategoryIdSchema = joi_1.default.object({
     categoryId: joi_1.default.number().min(1).required(),
+    auctionId: joi_1.default.number().integer().min(1).required(),
+});
+exports.auctionFileIdSchema = joi_1.default.object({
+    fileId: joi_1.default.number().integer().min(1).required(),
+});
+exports.auctionTeamIdSchema = joi_1.default.object({
+    teamId: joi_1.default.number().min(1).required(),
+    auctionId: joi_1.default.number().integer().min(1).required(),
 });
 exports.updateCategorySchema = joi_1.default.object({
     defCategoryDisplayOrderId: joi_1.default.number().min(1).required().allow(null),
-    players_selection_rule: joi_1.default.string().valid("RANDOM", "MANUAL", "SEQUENCE").required().allow(null, ''),
-    auctionId: joi_1.default.number().integer().min(1).required()
+    players_selection_rule: joi_1.default.string().valid("RANDOM", "MANUAL", "SEQUENCE").required().allow(null, ""),
+    auctionId: joi_1.default.number().integer().min(1).required(),
 });
 exports.upsetTransactionSchema = joi_1.default.object({
-    status: joi_1.default.string().valid("pending", "canceled", "denied", "completed").required().allow(null, ''),
+    status: joi_1.default.string().valid("pending", "canceled", "denied", "completed").required().allow(null, ""),
     auctionId: joi_1.default.number().integer().min(1).required(),
     amount: joi_1.default.number().integer().min(1).required(),
     transactionId: joi_1.default.number().integer().min(1).required(),
@@ -74,7 +83,6 @@ exports.upsetTeamSchema = joi_1.default.object({
     shortName: joi_1.default.string().trim().required(),
     shortcutKey: joi_1.default.string().max(1).trim().required(),
     image: joi_1.default.number().integer().required().allow(null),
-    auctionId: joi_1.default.number().integer().min(1).required(),
 });
 exports.assignOwnerToTeamSchema = joi_1.default.object({
     teamId: joi_1.default.number().required().allow(null),
@@ -85,6 +93,7 @@ exports.assignOwnerToTeamSchema = joi_1.default.object({
 exports.removeOwnerFromTeamSchema = joi_1.default.object({
     teamId: joi_1.default.number().min(1).required(),
     ownerId: joi_1.default.number().integer().min(1).required(),
+    auctionId: joi_1.default.number().integer().min(1).required(),
 });
 const incrementsSchema = joi_1.default.object({
     increment: joi_1.default.number().min(1).required(),
@@ -92,42 +101,34 @@ const incrementsSchema = joi_1.default.object({
 });
 exports.upsetCategorySchema = joi_1.default.object({
     categoryId: joi_1.default.number().required().allow(null),
-    auctionId: joi_1.default.number().required(),
     name: joi_1.default.string().trim().required(),
-    maxPlayer: joi_1.default.number().max(30).required(),
-    minPlayer: joi_1.default.number().min(1).required(),
-    baseBid: joi_1.default.number().min(1).max(9999999).required(),
-    reserveBid: joi_1.default.number().min(1).max(9999999999).required(),
-    highestBid: joi_1.default.number().min(1).max(999999).required(),
-    categoryHighestBid: joi_1.default.number().min(1).max(999999).required(),
-    increments: joi_1.default.array()
-        .items(incrementsSchema)
-        .allow(null)
-        .empty(null)
-        .default([])
+    maxPlayer: joi_1.default.number().max(1000).required().allow(null),
+    minPlayer: joi_1.default.number().min(1).required().allow(null),
+    baseBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
+    reserveBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
+    highestBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
+    categoryHighestBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
+    increments: joi_1.default.array().items(incrementsSchema).allow(null).empty(null).default([]),
 });
 exports.getPlayerByCategoryIdSchema = joi_1.default.object({
     auctionId: joi_1.default.number().min(1).required(),
     categoryId: joi_1.default.number().min(1).required(),
 });
 exports.updatePlayerToAuctionSchema = joi_1.default.object({
-    operation: joi_1.default.string()
-        .valid("ASSIGN_AUCTION", "ASSIGN_CATEGORY", "REMOVE_CATEGORY", "REMOVE_AUCTION")
-        .required(),
     auctionId: joi_1.default.number().min(1).required(),
-    categoryId: joi_1.default.number().min(1)
-        .when('operation', {
-        is: joi_1.default.valid("ASSIGN_AUCTION", "REMOVE_AUCTION"),
-        then: joi_1.default.forbidden(),
-        otherwise: joi_1.default.required()
-    }),
-    playerIds: joi_1.default.array()
-        .items(joi_1.default.number().integer().min(1).required())
-        .when('operation', {
-        is: "REMOVE_AUCTION",
-        then: joi_1.default.forbidden(),
-        otherwise: joi_1.default.required()
-    })
+    categoryId: joi_1.default.number().min(1).required().allow(null),
+    playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()),
+    baseBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
+    isApproved: joi_1.default.boolean().allow(null).optional(),
+});
+exports.JoinAuctionSchema = joi_1.default.object({
+    auctionId: joi_1.default.number().min(1).required(),
+    fileId: joi_1.default.number().min(1).required().allow(null),
+});
+exports.updatePlayerToCategorySchema = joi_1.default.object({
+    auctionId: joi_1.default.number().min(1).required(),
+    categoryId: joi_1.default.number().min(1).required().allow(null),
+    playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()),
 });
 exports.upsetWishlistSchema = joi_1.default.object({
     id: joi_1.default.number().required().allow(null),
@@ -139,4 +140,8 @@ exports.upsetWishlistSchema = joi_1.default.object({
 exports.deleteFromWhislistSchema = joi_1.default.object({
     playerId: joi_1.default.number().min(1).required(),
     teamId: joi_1.default.number().min(1).required(),
+});
+exports.approveAuctionForAuctionSchema = joi_1.default.object({
+    playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()).min(1).required(),
+    auctionId: joi_1.default.number().min(1).required(),
 });

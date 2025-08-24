@@ -273,12 +273,16 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
                 "Is Paid Player",
                 "Price Per Match",
                 "Will Join Any Owner",
+                "Player Role",
+                "Batting Style",
+                "Bowling Style",
+                "Description"
             ],
             range: 1,
             defval: null,
         });
-        if (!worksheet["M1"] || worksheet["M1"].v !== "Result") {
-            XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "M1" });
+        if (!worksheet["Q1"] || worksheet["Q1"].v !== "Result") {
+            XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "Q1" });
         }
         const allowedPlayerIds = [];
         const processedUsers = await Promise.all(users.map(async (user, index) => {
@@ -300,7 +304,7 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
         }));
         processedUsers.forEach((user) => {
             XLSX.utils.sheet_add_aoa(worksheet, [[user.Result]], {
-                origin: `M${user.Row}`,
+                origin: `Q${user.Row}`,
             });
         });
         notification_service_1.NotificationService.batchCreateNotification(allowedPlayerIds, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, req.userId, req.role);

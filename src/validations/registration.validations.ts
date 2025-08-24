@@ -66,7 +66,7 @@ export const updateProfileByRoleSchema = Joi.object<UpdateProfileSchemaData>({
   willJoinAnyOwner: Joi.boolean().allow('', null).optional(),
   playerRole: Joi.string().valid("Top-order Batsman", "Middle-order Batsman", 'Bowler', 'All-rounder', 'Lower-order Batsman', 'Opening Batsman', 'None').optional().allow(null),
   battingStyle: Joi.string().valid('Left-hand Batsman', 'Right-hand Batsman').optional().allow(null),
-  bowlingStyle: Joi.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman' , ' Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
+  bowlingStyle: Joi.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman' , 'Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
   description: Joi.string().valid().max(1000).optional().allow(null)
 });
 
@@ -98,6 +98,6 @@ export const addProfileSchema = Joi.object<AddProfileSchemaData>({
   willJoinAnyOwner: Joi.boolean().allow('', null).optional(),
   playerRole: Joi.string().valid("Top-order Batsman", "Middle-order Batsman", 'Bowler', 'All-rounder', 'Lower-order Batsman', 'Opening Batsman', 'None').optional().allow(null),
   battingStyle: Joi.string().valid('Left-hand Batsman', 'Right-hand Batsman').optional().allow(null),
-  bowlingStyle: Joi.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman' , ' Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
+  bowlingStyle: Joi.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman' , 'Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
   description: Joi.string().valid().max(1000).optional().allow(null)
 });

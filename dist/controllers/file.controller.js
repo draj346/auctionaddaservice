@@ -131,7 +131,7 @@ FileController.userUploadForAuction = async (req, res) => {
                     isNotFound: true,
                 });
             }
-            const { fileId, auctionId, type } = req.body;
+            const { fileId, auctionId, type, showNotification } = req.body;
             const imagePath = req.file.path;
             const url = `${env_1.FILE_UPLOAD_FOLDER}${req.file.filename}`;
             let playerId = req.userId;
@@ -139,6 +139,7 @@ FileController.userUploadForAuction = async (req, res) => {
             if (auctionId) {
                 const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(auctionId);
                 if (!auctionInfo?.playerId) {
+                    await fileService.deleteUploadedFile(imagePath);
                     return apiResponse_1.ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
                 }
                 playerId = auctionInfo.playerId;
@@ -162,13 +163,13 @@ FileController.userUploadForAuction = async (req, res) => {
                 });
             }
             if (result) {
-                if (fileId) {
+                if (fileId && showNotification) {
                     if (type === "logo") {
                         await notification_service_1.NotificationService.createNotification(playerId, playerId === req.userId
                             ? notification_constants_1.NotificationMessage.AUCTION_IMAGE_UPDATE_BY_SELF
                             : notification_constants_1.NotificationMessage.AUCTION_IMAGE_UPDATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.IMAGE_UPDATE, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(name, "", code));
                     }
-                    else {
+                    else if (type === "qrcode") {
                         await notification_service_1.NotificationService.createNotification(playerId, playerId === req.userId
                             ? notification_constants_1.NotificationMessage.AUCTION_QRIMAGE_UPDATE_BY_SELF
                             : notification_constants_1.NotificationMessage.AUCTION_QRIMAGE_UPDATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.IMAGE_UPDATE, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(name, "", code));
@@ -188,5 +189,66 @@ FileController.userUploadForAuction = async (req, res) => {
         apiResponse_1.ApiResponse.error(res, "Uploading failed. Please try again.", 500, {
             isError: true,
         });
+    }
+};
+FileController.uploadFileForJoiningAuctionSchema = async (req, res) => {
+    try {
+        multerConfig_1.paymentUpload.single("image")(req, res, async (err) => {
+            if (err) {
+                return apiResponse_1.ApiResponse.error(res, err.message, 400, {
+                    isUpdateFailed: true,
+                });
+            }
+            if (!req.file) {
+                return apiResponse_1.ApiResponse.error(res, "No image uploaded", 400, {
+                    isNotFound: true,
+                });
+            }
+            const { auctionId } = req.body;
+            const imagePath = req.file.path;
+            const url = `${env_1.PAYMENT_FILE_UPLOAD_FOLDER}${req.file.filename}`;
+            if (auctionId) {
+                const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(auctionId);
+                if (!auctionInfo?.playerId) {
+                    await fileService.deleteUploadedFile(imagePath);
+                    return apiResponse_1.ApiResponse.error(res, "Auction Not Found", 200, { isNotFound: true });
+                }
+            }
+            const result = await fileService.uploadFile({
+                name: req.file.filename,
+                path: imagePath,
+                url,
+            });
+            if (result) {
+                return apiResponse_1.ApiResponse.success(res, { fileId: result }, 200, "Image uploaded successfully");
+            }
+            else {
+                return apiResponse_1.ApiResponse.error(res, "Upload failed", 200, {
+                    isUpdateFailed: true,
+                });
+            }
+        });
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Uploading failed. Please try again.", 500, {
+            isError: true,
+        });
+    }
+};
+FileController.getPaymentFilePath = async (req, res) => {
+    try {
+        const fileId = parseInt(req.params.fileId);
+        const files = await fileService.getFile(fileId);
+        if (files) {
+            apiResponse_1.ApiResponse.success(res, { path: files.url }, 200, "file retrieve successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 200, { isNotFound: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };

@@ -60,7 +60,7 @@ CREATE TABLE teams (
   INDEX (name),
   INDEX (shortName),
   INDEX auctionId_idx (auctionId),
-  INDEX idx_teams_active (auctionId, isActive, teamId)
+  INDEX idx_teams_active (auctionId, isActive, teamId),
 ) AUTO_INCREMENT=1001;
 
 CREATE TABLE team_owner (
@@ -108,6 +108,7 @@ CREATE TABLE auction_category_player (
   isApproved BOOLEAN DEFAULT FALSE,
   paymentId INT DEFAULT NULL,
   INDEX idx_category (categoryId),
+  INDEX idx_acp_auction (auctionId),
   INDEX idx_auction_player (auctionId, playerId, categoryId),
   UNIQUE KEY unique_auction_player (auctionId, playerId),
   FOREIGN KEY (auctionId) REFERENCES auctions(auctionId) ON DELETE CASCADE,
@@ -152,10 +153,11 @@ CREATE TABLE auction_team_player (
   playerId INT NOT NULL,
   price INT DEFAULT 0,
   auctionId INT NOT NULL,
-  isPaymentDone BOOLEAN DEFAULT false,
+  status ENUM('RETAIN', 'NEW') DEFAULT NULL,
   INDEX (teamId),
   INDEX (playerId),
   INDEX (auctionId),
+  INDEX idx_atp_auction_player (auctionId, playerId),
   UNIQUE KEY unique_team_player_auction (teamId, playerId, auctionId),
   FOREIGN KEY (teamId) REFERENCES teams(teamId) ON DELETE CASCADE,
   FOREIGN KEY (playerId) REFERENCES players(playerId) ON DELETE CASCADE,

@@ -14,6 +14,7 @@ import {
   ICreateCategory,
   ICreateTeam,
   IManageAuction,
+  IManageTeam,
   IMyAuctions,
   IRemoveOwner,
   ITeamDetails,
@@ -209,6 +210,11 @@ export class AuctionService {
     return result?.length > 0 ? result[0].count : 0;
   }
 
+  public static async getTeamPlayerCount(auctionId: number): Promise<number> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getPlayerCountForTeam, [auctionId]);
+    return result?.length > 0 ? result[0].count : 0;
+  }
+
   public static async assignOwnerToTeam(team: IAssignOwner): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.assignOwnerToTeam, [
       team.auctionId,
@@ -292,6 +298,22 @@ export class AuctionService {
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
 
+  public static async updatePlayerToTeam(
+    playerInfo: IManageTeam
+  ): Promise<IAuctionStoreProcedureResponse | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.updatePlayerToTeam, [
+      playerInfo.operation,
+      playerInfo.auctionId,
+      playerInfo.teamId,
+      JSON.stringify(playerInfo.playerIds),
+      playerInfo.price || null,
+      playerInfo.requesterId,
+      playerInfo.isAdmin
+    ]);
+    return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
+  }
+
+
   public static async upsetWishlist(wishlist: IAssignWishlist): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.upsetWishlist, [
       wishlist.id || null,
@@ -338,6 +360,11 @@ export class AuctionService {
 
   public static async getPendingPlayerCountForAuction(auctionId: number): Promise<number> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getCountAuctionPlayersPending, [auctionId]);
+    return result?.length > 0 ? result[0].total : 0;
+  }
+
+  public static async getTeamPlayerCountByTeamId(auctionId: number, teamId: number): Promise<number> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getTeamPlayerCountById, [auctionId, teamId]);
     return result?.length > 0 ? result[0].total : 0;
   }
 

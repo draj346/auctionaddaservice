@@ -44,7 +44,7 @@ export class AuthController {
 
       let isSuccess;
       if (method === "email") {
-        isSuccess = await emailService.sendOTP(identifier, code);
+        isSuccess = await emailService.sendOTP(identifier, code, req.name);
       } else {
         isSuccess = await smsService.sendOTP(identifier, code);
       }

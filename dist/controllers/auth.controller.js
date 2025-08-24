@@ -47,7 +47,7 @@ AuthController.sendOTP = async (req, res) => {
         const code = otpService.storeOTP(sessionId, identifier);
         let isSuccess;
         if (method === "email") {
-            isSuccess = await emailService.sendOTP(identifier, code);
+            isSuccess = await emailService.sendOTP(identifier, code, req.name);
         }
         else {
             isSuccess = await smsService.sendOTP(identifier, code);

@@ -92,8 +92,36 @@ export const AuctionQueries = {
                 shortName = VALUES(shortName),
                 image = VALUES(image),
                 shortcutKey = VALUES(shortcutKey);`,
-  getTeamsByAuctionId: `SELECT teamId, name, shortName, image as imageId, shortcutKey FROM teams WHERE auctionId = ?`,
-  getTeamsById: `SELECT teamId, name, shortName, image as imageId, shortcutKey FROM teams WHERE auctionId = ? AND teamId = ?`,
+  getTeamsByAuctionId: `SELECT 
+                          t.teamId, 
+                          t.name, 
+                          t.shortName, 
+                          t.image as imageId, 
+                          t.shortcutKey, 
+                          a.maxPlayerPerTeam, 
+                          a.minPlayerPerTeam,
+                          COUNT(atp.playerId) as playerCount
+                        FROM teams t 
+                        LEFT JOIN auctions a ON a.auctionId = t.auctionId
+                        LEFT JOIN auction_team_player atp ON t.teamId = atp.teamId AND atp.auctionId = t.auctionId
+                        WHERE t.auctionId = ?
+                        GROUP BY t.teamId;`,
+  getPlayerCountForTeam: `select count(*) as count from auction_team_player atp where auctionId =?`,
+  getTeamsById: `SELECT 
+                  t.teamId, 
+                  t.name, 
+                  t.shortName, 
+                  t.image as imageId, 
+                  t.shortcutKey, 
+                  a.maxPlayerPerTeam, 
+                  a.minPlayerPerTeam,
+                  COUNT(atp.playerId) as playerCount
+                FROM teams t 
+                LEFT JOIN auctions a ON a.auctionId = t.auctionId
+                LEFT JOIN auction_team_player atp ON t.teamId = atp.teamId AND atp.auctionId = t.auctionId
+                WHERE t.auctionId = 1020 
+                  AND t.teamId = 1017
+                GROUP BY t.teamId;`,
   deleteTeamsById: `CALL DeleteTeam(?, ?, ?, ?)`,   
   getTeamCount: `select count(*) as count from teams where auctionId = ?`,             
   assignOwnerToTeam: `INSERT IGNORE INTO team_owner (auctionId, teamId, ownerId, tag)
@@ -129,6 +157,7 @@ export const AuctionQueries = {
   getPlayerByCategoryId: `Select playerId FROM auction_category_player WHERE categoryId = ? AND auctionId = ?`,
   deleteCategoryById: `CALL DeleteCategory(?, ?, ?, ?)`,
   updatePlayerToAuction: `CALL ManageAuctionPlayers(?, ?, ?, ?, ?, ?, ?)`,
+  updatePlayerToTeam: `CALL ManageTeamPlayers(?, ?, ?, ?, ?, ?, ?)`,
   upsetWishlist: `INSERT INTO team_wishlist (
                     id,
                     teamId,
@@ -142,6 +171,7 @@ export const AuctionQueries = {
   deleteFromWhislist: `DELETE FROM team_wishlist WHERE teamId = ? and playerId = ?`,
   getTeamOwnerInfo: `SELECT t.tag, p.name, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.teamId = ?`,
   getCountAuctionPlayersPending: `select count(*) as total from auction_category_player where auctionId = ?`,
+  getTeamPlayerCountById: `select count(*) as total from auction_team_player where auctionId = ? and teamId = ?`,
   getAuctionDetailByCode: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
                 code, isLive, isCompleted, pointPerTeam, baseBid, paymentStatus, baseIncreaseBy, qrCodeId, auctionRule as rule, isPaymentInCompanyAccount from auctions where isActive is True and code = ?;`,
   getMyAuctions: `select 

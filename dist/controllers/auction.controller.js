@@ -249,6 +249,66 @@ AuctionController.approveAuction = async (req, res) => {
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };
+AuctionController.approvePlayerForAuction = async (req, res) => {
+    try {
+        const data = req.body;
+        const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(data.auctionId);
+        if (!auctionInfo) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            if (auctionInfo.playerId !== req.userId) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const response = await auction_service_1.AuctionService.approvePlayerToAuction(data);
+        if (response) {
+            data.playerIds.forEach((id) => {
+                notification_service_1.NotificationService.createNotification(id, notification_constants_1.NotificationMessage.PLAYER_APPROVED_FOR_AUCTION, notification_constants_1.NOTIFICATIONS.PLAYER_AUCTION_APPROVED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(auctionInfo.name, undefined, auctionInfo.code));
+            });
+            apiResponse_1.ApiResponse.success(res, {}, 200, "Player Approved for Auctions successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Unable to approved player for auction. Please try again", 200, { isError: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.starPlayerForAuction = async (req, res) => {
+    try {
+        const data = req.body;
+        const response = await auction_service_1.AuctionService.starPlayerForAuction(data);
+        if (response) {
+            apiResponse_1.ApiResponse.success(res, {}, 200, "Player updated successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.unStarPlayerForAuction = async (req, res) => {
+    try {
+        const data = req.body;
+        const response = await auction_service_1.AuctionService.unStarPlayerForAuction(data);
+        if (response) {
+            apiResponse_1.ApiResponse.success(res, {}, 200, "Player updated successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
 AuctionController.getAuctionBySearch = async (req, res) => {
     try {
         const data = req.query;
@@ -289,6 +349,199 @@ AuctionController.getAuctionById = async (req, res) => {
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };
+AuctionController.addPlayerToAuction = async (req, res) => {
+    try {
+        const data = {
+            ...req.body,
+            operation: "ASSIGN_AUCTION",
+        };
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            const isValidAuction = await auction_service_1.AuctionService.isValidAuctionForAccess(data.auctionId, req.userId);
+            if (!isValidAuction) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const response = await auction_service_1.AuctionService.updatePlayerToAuction(data);
+        if (response) {
+            const categoryResponse = {};
+            if (response.status) {
+                data.playerIds.forEach((id) => {
+                    if (id !== response.playerId) {
+                        if (id === req.userId) {
+                            notification_service_1.NotificationService.createNotification(response.playerId || req.userId, notification_constants_1.NotificationMessage.PLAYER_ADDED_TO_AUCTION_BY_SELF, notification_constants_1.NOTIFICATIONS.PLAYER_ADDED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || ""));
+                        }
+                        else if (req.userId === response.playerId || roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+                            notification_service_1.NotificationService.createNotification(id, notification_constants_1.NotificationMessage.PLAYER_ADDED_TO_AUCTION_BY_ELSE, notification_constants_1.NOTIFICATIONS.PLAYER_ADDED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || ""));
+                        }
+                    }
+                });
+                if (response.isNotFound !== undefined)
+                    categoryResponse.isNotFound = response.isNotFound;
+                if (response.status !== undefined)
+                    categoryResponse.status = response.status;
+                if (response.isAccessDenied !== undefined)
+                    categoryResponse.isAccessDenied = response.isAccessDenied;
+                if (response.isLive !== undefined)
+                    categoryResponse.isLive = response.isLive;
+                if (response.isError !== undefined)
+                    categoryResponse.isError = response.isError;
+                apiResponse_1.ApiResponse.success(res, categoryResponse, 200, "Successfully added to Auction!!");
+            }
+            else {
+                apiResponse_1.ApiResponse.error(res, "Unable to add to auction. Please try again", 200, { isError: true });
+            }
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.joinPlayerToAuction = async (req, res) => {
+    try {
+        const data = {
+            ...req.body,
+            operation: "ASSIGN_SELF",
+            playerIds: [req.userId],
+        };
+        const playerId = await auction_service_1.AuctionService.isValidAuctionPlayerIdForEdit(data.auctionId);
+        if (!playerId) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        const response = await auction_service_1.AuctionService.updatePlayerToAuction(data);
+        if (response) {
+            const auctionResponse = {};
+            if (response.status) {
+                notification_service_1.NotificationService.createNotification(playerId, notification_constants_1.NotificationMessage.PLAYER_JOINED_AUCTION, notification_constants_1.NOTIFICATIONS.PLAYER_JOINED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || "", "", "", "", req.name));
+                if (response.isNotFound !== undefined)
+                    auctionResponse.isNotFound = response.isNotFound;
+                if (response.status !== undefined)
+                    auctionResponse.status = response.status;
+                if (response.isAccessDenied !== undefined)
+                    auctionResponse.isAccessDenied = response.isAccessDenied;
+                if (response.isLive !== undefined)
+                    auctionResponse.isLive = response.isLive;
+                if (response.isError !== undefined)
+                    auctionResponse.isError = response.isError;
+                apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Successfully added to Auction!!");
+            }
+            else {
+                apiResponse_1.ApiResponse.error(res, "Unable to add to auction. Please try again", 200, { isError: true });
+            }
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.removeSelfFromAuction = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const data = {
+            auctionId,
+            operation: "REMOVE_AUCTION",
+            playerIds: [req.userId],
+        };
+        const playerId = await auction_service_1.AuctionService.isValidAuctionPlayerIdForEdit(data.auctionId);
+        if (!playerId) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        const response = await auction_service_1.AuctionService.updatePlayerToAuction(data);
+        if (response) {
+            const auctionResponse = {};
+            if (response.status) {
+                notification_service_1.NotificationService.createNotification(playerId, notification_constants_1.NotificationMessage.PLAYER_REMOVED_SELF_AUCTION, notification_constants_1.NOTIFICATIONS.PLAYER_EXIT, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || "", "", "", "", req.name));
+                if (response.isNotFound !== undefined)
+                    auctionResponse.isNotFound = response.isNotFound;
+                if (response.status !== undefined)
+                    auctionResponse.status = response.status;
+                if (response.isAccessDenied !== undefined)
+                    auctionResponse.isAccessDenied = response.isAccessDenied;
+                if (response.isLive !== undefined)
+                    auctionResponse.isLive = response.isLive;
+                if (response.isError !== undefined)
+                    auctionResponse.isError = response.isError;
+                apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Successfully exited from Auction!!");
+            }
+            else {
+                apiResponse_1.ApiResponse.error(res, "Unable to remove from auction. Please try again", 200, { isError: true });
+            }
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.removePlayerFromAuction = async (req, res) => {
+    try {
+        const data = {
+            ...req.body,
+            operation: "REMOVE_AUCTION",
+        };
+        const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(data.auctionId);
+        if (!auctionInfo) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            if (auctionInfo.playerId !== req.userId) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const response = await auction_service_1.AuctionService.updatePlayerToAuction(data);
+        if (response) {
+            const categoryResponse = {};
+            if (response.status) {
+                data.playerIds.forEach((id) => {
+                    if (id !== response.playerId) {
+                        if (id === req.userId) {
+                            notification_service_1.NotificationService.createNotification(response.playerId || req.userId, notification_constants_1.NotificationMessage.PLAYER_REMOVED_FROM_AUCTION_BY_SELF, notification_constants_1.NOTIFICATIONS.PLAYER_REMOVED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || ""));
+                        }
+                        else if (req.userId === response.playerId || roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+                            notification_service_1.NotificationService.createNotification(id, notification_constants_1.NotificationMessage.PLAYER_REMOVED_FROM_AUCTION_BY_ELSE, notification_constants_1.NOTIFICATIONS.PLAYER_REMOVED, req.userId, req.role, auctions_helpers_1.AuctionsHelper.getNotificationJSON(response.name || ""));
+                        }
+                    }
+                });
+                if (response.isNotFound !== undefined)
+                    categoryResponse.isNotFound = response.isNotFound;
+                if (response.status !== undefined)
+                    categoryResponse.status = response.status;
+                if (response.isAccessDenied !== undefined)
+                    categoryResponse.isAccessDenied = response.isAccessDenied;
+                if (response.isLive !== undefined)
+                    categoryResponse.isLive = response.isLive;
+                if (response.isError !== undefined)
+                    categoryResponse.isError = response.isError;
+                apiResponse_1.ApiResponse.success(res, categoryResponse, 200, "Successfully removed from Auction!!");
+            }
+            else {
+                apiResponse_1.ApiResponse.error(res, "Unable to remove from auction. Please try again", 200, { isError: true });
+            }
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.getPendingPlayerCountForAuction = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            const isValidAuction = await auction_service_1.AuctionService.isValidAuctionForAccess(auctionId, req.userId);
+            if (!isValidAuction) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const response = await auction_service_1.AuctionService.getPendingPlayerCountForAuction(auctionId);
+        apiResponse_1.ApiResponse.success(res, { total: response }, 200, "Pending Players for Auction!!");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
 AuctionController.updateFilePaths = async (auctionResponse) => {
     if (auctionResponse.length > 0) {
         const imageIds = [...new Set(auctionResponse.map((a) => a.imageId))].filter((id) => id !== null);
@@ -322,4 +575,36 @@ AuctionController.updateFilePath = async (auctionResponse) => {
         }
     }
     return auctionResponse;
+};
+AuctionController.getAuctionByCodeForJoin = async (req, res) => {
+    try {
+        const data = req.query;
+        let auctionResponse = await auction_service_1.AuctionService.getAuctionDetailsByCode(data.code || "", req.userId);
+        if (auctionResponse) {
+            auctionResponse = await _a.updateFilePath(auctionResponse);
+            apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Auction Details!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Unable to retrieve Auction. Please try again", 200, { isNotFound: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.getMyAuctions = async (req, res) => {
+    try {
+        let auctionResponse = await auction_service_1.AuctionService.getMyAuctions(req.userId);
+        if (auctionResponse) {
+            apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Auction Details!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.error(res, "Unable to retrieve Auction. Please try again", 200, { isNotFound: true });
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
 };

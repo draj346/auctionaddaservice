@@ -8,16 +8,22 @@ class AuctionsHelper {
         const roleInitial = role[Math.floor(Math.random() * role.length)].toUpperCase();
         return roleInitial + nameInitial + auctionId.toString() + secondNameInitial;
     }
-    static getNotificationJSON(name, state, code) {
+    static getNotificationJSON(name, state, code, categoryName, fullName) {
         const result = {};
         if (name) {
             result.name = name;
+        }
+        if (categoryName) {
+            result.categoryName = categoryName;
         }
         if (state) {
             result.state = state;
         }
         if (code) {
             result.code = code;
+        }
+        if (fullName) {
+            result.fullName = fullName;
         }
         return result;
     }

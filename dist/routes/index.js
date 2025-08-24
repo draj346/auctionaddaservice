@@ -58,9 +58,24 @@ const path_1 = __importDefault(require("path"));
 const notification_controller_1 = require("../controllers/notification.controller");
 const auction_controller_1 = require("../controllers/auction.controller");
 const contact_controller_1 = require("../controllers/contact.controller");
+const common_controller_1 = require("../controllers/common.controller");
+const category_controller_1 = require("../controllers/category.controller");
+const teams_controller_1 = require("../controllers/teams.controller");
 const router = (0, express_1.Router)();
 // Public routes
 router.use('/uploads', express_1.default.static(path_1.default.join(path_1.default.resolve(), 'public', 'uploads'), {
+    maxAge: '1d',
+    setHeaders: (res) => {
+        res.set('X-Static-Serve', 'true');
+    }
+}));
+router.use('/banner', express_1.default.static(path_1.default.join(path_1.default.resolve(), 'public', 'banner'), {
+    maxAge: '1d',
+    setHeaders: (res) => {
+        res.set('X-Static-Serve', 'true');
+    }
+}));
+router.use('/payments', express_1.default.static(path_1.default.join(path_1.default.resolve(), 'public', 'payments'), {
     maxAge: '1d',
     setHeaders: (res) => {
         res.set('X-Static-Serve', 'true');
@@ -77,6 +92,10 @@ router.post('/resetPassword', (0, validation_middleware_1.validate)(authValidati
 router.post('/login', (0, validation_middleware_1.validate)(authValidation.loginSchema), auth_controller_1.AuthController.login);
 //Contact Message
 router.post('/addComment', (0, validation_middleware_1.validate)(contactValidation.insertMessageSchema), contact_controller_1.ContactController.insertComment);
+//Guest
+router.get('/banner', common_controller_1.CommonController.getBanner);
+router.get('/discount', common_controller_1.CommonController.getDiscount);
+router.get('/videos', common_controller_1.CommonController.getYoutubeVideos);
 // Protected routes under /auth
 router.use('/auth', auth_middleware_1.authMiddleware);
 // Validate JWT Token
@@ -109,17 +128,50 @@ router.delete('/auth/players/:playerId/role/admin/delete', (0, validation_middle
 router.post('/auth/players/approve', (0, validation_middleware_1.validate)(roleValidation.playerIdsSchema), (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.SUPER_ADMIN, roles_constants_1.ROLES.ADMIN]), role_controller_1.RoleController.approvePlayers);
 // Auction
 router.post('/auth/auctions/upload', (0, validation_middleware_1.validate)(fileValidation.userUploadForAuctionSchema), file_controller_1.FileController.userUploadForAuction);
+router.post('/auth/auctions/payment/upload', (0, validation_middleware_1.validate)(fileValidation.uploadFileForJoiningAuctionSchema), file_controller_1.FileController.uploadFileForJoiningAuctionSchema);
 router.post('/auth/auctions/new', (0, validation_middleware_1.validate)(auctionValidation.upsetAuctionSchema), auction_controller_1.AuctionController.upsetAuction);
 router.get('/auth/auctions', auction_controller_1.AuctionController.getAuctions);
+router.get('/auth/auctions/my', auction_controller_1.AuctionController.getMyAuctions);
 router.get('/auth/auctions/forCopy', auction_controller_1.AuctionController.getAuctionsForCopy);
 router.post('/auth/auctions/:auctionId/copy', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.copyAuction);
 router.delete('/auth/auctions/:auctionId/delete', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.deleteAuction);
 router.put('/auth/auctions/:auctionId/approve', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.approveAuction);
 router.put('/auth/auctions/:auctionId/completed', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.updateAuctionCompletionStatus);
 router.get('/auth/auctions/search', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.auctionSearchTextSchema, "query"), auction_controller_1.AuctionController.getAuctionBySearch);
-router.get('/auth/auctions/:auctionId', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.getAuctionById);
+router.get('/auth/auctions/code', (0, validation_middleware_1.validate)(auctionValidation.auctionCodeSchema, "query"), auction_controller_1.AuctionController.getAuctionByCodeForJoin);
 //Contact Message
 router.get('/auth/getUnWorkComment', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), contact_controller_1.ContactController.getUnWorkComment);
 router.get('/auth/getWorkComment', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), contact_controller_1.ContactController.getWorkComment);
 router.get('/auth/updateWorkStatus', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.ADMIN, roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(contactValidation.updateWorkStatusSchema), contact_controller_1.ContactController.updateWorkStatus);
+//Category
+router.post('/auth/auctions/:auctionId/category/new', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(auctionValidation.upsetCategorySchema), category_controller_1.CategoryController.upsetCategory);
+router.get('/auth/auctions/:auctionId/categories/:categoryId/participants', (0, validation_middleware_1.validate)(auctionValidation.auctionCategoryIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getParticipantPlayersForCategory);
+router.get('/auth/auctions/:auctionId/categories', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), category_controller_1.CategoryController.getCategoryByAuction);
+router.delete('/auth/auctions/:auctionId/categories/:categoryId/delete', (0, validation_middleware_1.validate)(auctionValidation.auctionCategoryIdSchema, 'params'), category_controller_1.CategoryController.deleteCategory);
+router.get('/auth/auctions/:auctionId/teams/:teamId/owner', (0, validation_middleware_1.validate)(auctionValidation.auctionTeamIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.ownerPaginationSchema, "query"), player_controller_1.PlayerController.getOwnerForTeam);
+//Teams
+router.post('/auth/auctions/:auctionId/team/new', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(auctionValidation.upsetTeamSchema), teams_controller_1.TeamsController.upsetTeam);
+router.get('/auth/auctions/:auctionId/teams', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), teams_controller_1.TeamsController.getTeamsByAuction);
+router.delete('/auth/auctions/:auctionId/teams/:teamId/delete', (0, validation_middleware_1.validate)(auctionValidation.auctionTeamIdSchema, 'params'), teams_controller_1.TeamsController.deleteTeam);
+router.post('/auth/team/owner/assign', (0, validation_middleware_1.validate)(auctionValidation.assignOwnerToTeamSchema), teams_controller_1.TeamsController.assignOwnerToTeam);
+router.delete('/auth/team/owner/remove', (0, validation_middleware_1.validate)(auctionValidation.removeOwnerFromTeamSchema), teams_controller_1.TeamsController.removeOwnerFromTeam);
+router.get('/auth/auctions/:auctionId/canAddTeam', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), teams_controller_1.TeamsController.canAddTeam);
+router.get('/auth/auctions/:auctionId/playersForAuction', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getPlayersForAuction);
+router.get('/auth/auctions/:auctionId/playersForCategory', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getPlayersForCategory);
+router.get('/auth/auctions/:auctionId/players/count', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.getPendingPlayerCountForAuction);
+router.get('/auth/auctions/:auctionId/players/participants', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getAddedPlayersForAuction);
+//Add Players
+router.post('/auth/auctions/players/add', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToAuctionSchema), auction_controller_1.AuctionController.addPlayerToAuction);
+router.post('/auth/auctions/players/join', (0, validation_middleware_1.validate)(auctionValidation.JoinAuctionSchema), auction_controller_1.AuctionController.joinPlayerToAuction);
+router.delete('/auth/auctions/:auctionId/players/exit', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.removeSelfFromAuction);
+router.post('/auth/auctions/players/approve', (0, validation_middleware_1.validate)(auctionValidation.approveAuctionForAuctionSchema), auction_controller_1.AuctionController.approvePlayerForAuction);
+router.post('/auth/auctions/players/sr', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.approveAuctionForAuctionSchema), auction_controller_1.AuctionController.starPlayerForAuction);
+router.post('/auth/auctions/players/ur', (0, permissions_middleware_1.CheckPermission)([roles_constants_1.ROLES.SUPER_ADMIN]), (0, validation_middleware_1.validate)(auctionValidation.approveAuctionForAuctionSchema), auction_controller_1.AuctionController.unStarPlayerForAuction);
+router.delete('/auth/auctions/players/remove', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToAuctionSchema), auction_controller_1.AuctionController.removePlayerFromAuction);
+router.post('/auth/auctions/category/players/add', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToCategorySchema), category_controller_1.CategoryController.addPlayerToCategory);
+router.delete('/auth/auctions/category/players/remove', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToCategorySchema), category_controller_1.CategoryController.removePlayerFromCategory);
+router.get('/auth/auctions/file/:fileId', (0, validation_middleware_1.validate)(auctionValidation.auctionFileIdSchema, 'params'), file_controller_1.FileController.getPaymentFilePath);
+router.get('/auth/auctions/:auctionId/teams/:teamId', (0, validation_middleware_1.validate)(auctionValidation.auctionTeamIdSchema, 'params'), teams_controller_1.TeamsController.getTeamById);
+router.get('/auth/auctions/:auctionId/categories/:categoryId', (0, validation_middleware_1.validate)(auctionValidation.auctionCategoryIdSchema, 'params'), category_controller_1.CategoryController.getcategoryById);
+router.get('/auth/auctions/:auctionId', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.getAuctionById);
 exports.default = router;

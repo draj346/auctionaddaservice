@@ -5,9 +5,17 @@ import { RoleHelper } from "../helpers/roles.helpers";
 import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionsHelper } from "../helpers/auctions.helpers";
-import { IAssignOwner, ICreateTeam, IRemoveOwner, ITeamDetails } from "../types/auction.types";
+import {
+  IAssignOwner,
+  ICreateTeam,
+  IManageTeam,
+  IManageTeamOperation,
+  IRemoveOwner,
+  ITeamDetails,
+} from "../types/auction.types";
 import { FileService } from "../services/file.service";
 import { FREE_TEAM_CREATE_LIMIT } from "../config/env";
+import { PlayerRole } from "../constants/roles.constants";
 
 const fileService = new FileService();
 
@@ -145,8 +153,8 @@ export class TeamsController {
         teamResponse = await this.updateFilePath(teamResponse);
         const response = {
           team: teamResponse,
-          owners: teamOwnerResponse || []
-        }
+          owners: teamOwnerResponse || [],
+        };
         ApiResponse.success(res, response, 200, "Team Details!!");
       } else {
         ApiResponse.error(res, "Unable to retrieve Team. Please try again", 200, { isNotFound: true });
@@ -203,22 +211,113 @@ export class TeamsController {
     try {
       const auctionId = parseInt(req.params.auctionId);
       const response = await this.canAddNewTeam(auctionId);
-      ApiResponse.success(res, {status: response}, 200, "Team Status Retrieved Successfully");
+      ApiResponse.success(res, { status: response }, 200, "Team Status Retrieved Successfully");
     } catch (error) {
       console.log(error);
-      ApiResponse.success(res, {status: false}, 200, "Team Status Retrieved Successfully");
+      ApiResponse.success(res, { status: false }, 200, "Team Status Retrieved Successfully");
     }
-  }
+  };
 
-  private static canAddNewTeam = async(auctionId: number) => {
+  static retainPlayerToTeam = async (req: Request, res: Response) => {
+    try {
+      const data: IManageTeam = {
+        ...req.body,
+        operation: "RETAIN" as IManageTeamOperation,
+        requesterId: req.userId,
+        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+      };
+      return this.playerToTeamOperation(data, req.role, res);
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static addPlayerToTeam = async (req: Request, res: Response) => {
+    try {
+      const data: IManageTeam = {
+        ...req.body,
+        operation: "NEW" as IManageTeamOperation,
+        requesterId: req.userId,
+        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+      };
+      return this.playerToTeamOperation(data, req.role, res);
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static removePlayerFromTeam = async (req: Request, res: Response) => {
+    try {
+      const data: IManageTeam = {
+        ...req.body,
+        operation: "REMOVE" as IManageTeamOperation,
+        requesterId: req.userId,
+        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+      };
+      return this.playerToTeamOperation(data, req.role, res);
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static getTeamPlayerCount = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const teamId = parseInt(req.params.teamId);
+      const response = await AuctionService.getTeamPlayerCountByTeamId(auctionId, teamId);
+      ApiResponse.success(res, { total: response }, 200, "Pending Players for Auction!!");
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  private static playerToTeamOperation = async (data: IManageTeam, role: PlayerRole, res: Response) => {
+    const response = await AuctionService.updatePlayerToTeam(data);
+    if (response) {
+      if (response.status) {
+        data.playerIds.forEach((id) => {
+          if (id !== response.playerId) {
+            if (data.requesterId === response.playerId || data.isAdmin) {
+              NotificationService.createNotification(
+                id,
+                NotificationMessage.PLAYER_RETAIN_FOR_TEAM,
+                NOTIFICATIONS.PLAYER_ADDED_TO_TEAM as NotificationType,
+                data.requesterId,
+                role,
+                AuctionsHelper.getNotificationJSON(response.name || "")
+              );
+            }
+          }
+        });
+
+        ApiResponse.success(res, {}, 200, "Successfully added to Team!!");
+      } else {
+        const teamResponse: any = {};
+        if (response.isNotFound !== undefined) teamResponse.isNotFound = response.isNotFound;
+        if (response.status !== undefined) teamResponse.status = response.status;
+        if (response.isAccessDenied !== undefined) teamResponse.isAccessDenied = response.isAccessDenied;
+        if (response.isLive !== undefined) teamResponse.isLive = response.isLive;
+        if (response.isError !== undefined) teamResponse.isError = response.isError;
+        if (response.limitReached !== undefined) teamResponse.limitReached = response.limitReached;
+
+        ApiResponse.error(res, "Unable to add to Team. Please try again", 200, teamResponse);
+      }
+    }
+  };
+
+  private static canAddNewTeam = async (auctionId: number) => {
     try {
       let countResponse = await AuctionService.getTeamCount(auctionId);
       return countResponse < FREE_TEAM_CREATE_LIMIT;
     } catch (error) {
-       console.log(error);
-       return false;
+      console.log(error);
+      return false;
     }
-  }
+  };
 
   private static updateFilePaths = async (teamResponse: ITeamDetails[]) => {
     if (teamResponse.length > 0) {

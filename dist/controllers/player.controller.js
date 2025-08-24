@@ -39,6 +39,8 @@ const player_service_1 = require("../services/player.service");
 const apiResponse_1 = require("../utils/apiResponse");
 const XLSX = __importStar(require("xlsx"));
 const role_service_1 = require("../services/role.service");
+const roles_helpers_1 = require("../helpers/roles.helpers");
+const auction_service_1 = require("../services/auction.service");
 const playerService = new player_service_1.PlayerService();
 class PlayerController {
 }
@@ -134,9 +136,7 @@ PlayerController.exportPlayers = async (req, res) => {
                 return { playerId, allowed: hasRoleLevelAccess };
             });
             const accessResults = await Promise.all(accessChecks);
-            allowedPlayerIds = accessResults
-                .filter((result) => result.allowed)
-                .map((result) => result.playerId);
+            allowedPlayerIds = accessResults.filter((result) => result.allowed).map((result) => result.playerId);
             if (allowedPlayerIds.length === 0) {
                 return sendExcel("Access Denied", 403, "access_denied.xlsx", "Error");
             }
@@ -167,5 +167,104 @@ PlayerController.getAdmins = async (req, res) => {
     catch (error) {
         console.log(error);
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
+    }
+};
+PlayerController.getOwnerForTeam = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const teamId = parseInt(req.params.teamId);
+        const data = req.query;
+        const search = data.search || "";
+        let result;
+        if (search) {
+            result = await playerService.getPlayerForTeamOwnerByText(req.userId, teamId, search);
+        }
+        else {
+            result = await playerService.getPlayerForTeamOwner(req.userId, auctionId, teamId);
+        }
+        apiResponse_1.ApiResponse.success(res, result, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.");
+    }
+};
+PlayerController.getPlayersForAuction = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const data = req.query;
+        const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(auctionId);
+        if (!auctionInfo) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            if (auctionInfo.playerId !== req.userId) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getPlayersForAuction(req.userId, page, limit, search, auctionId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+PlayerController.getAddedPlayersForAuction = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const data = req.query;
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getAddedPlayersForAuction(req.userId, page, limit, search, auctionId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+PlayerController.getPlayersForCategory = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const data = req.query;
+        const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(auctionId);
+        if (!auctionInfo) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            if (auctionInfo.playerId !== req.userId) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getPlayersForCategory(page, limit, search, auctionId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+PlayerController.getParticipantPlayersForCategory = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const categoryId = parseInt(req.params.categoryId);
+        const data = req.query;
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getparticipantPlayersForCategory(page, limit, search, auctionId, categoryId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };

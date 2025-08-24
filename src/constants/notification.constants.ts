@@ -16,6 +16,7 @@ export const NOTIFICATIONS = {
   AUCTION_DELETED: "auction_deleted",
   CATEGORY_DELETED: "category_deleted",
   PLAYER_ADDED: "player_added",
+  PLAYER_ADDED_TO_TEAM: "player_added_to_team",
   PLAYER_JOINED: "player_join",
   PLAYER_REMOVED: "player_removed",
   PLAYER_EXIT: "player_exit",
@@ -99,6 +100,7 @@ export const NotificationMessage = {
   PLAYER_APPROVED_FOR_AUCTION: "PLAYER_APPROVED_FOR_AUCTION",
   PLAYER_JOINED_AUCTION: "PLAYER_JOINED_AUCTION",
   PLAYER_REMOVED_SELF_AUCTION: "PLAYER_REMOVED_SELF_AUCTION",
+  PLAYER_RETAIN_FOR_TEAM: "PLAYER_RETAIN_FOR_TEAM",
 
 };
 

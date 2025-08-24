@@ -10,6 +10,7 @@ import {
   ICreateTeam,
   IIncrements,
   IManageAuction,
+  IManageTeam,
   ITransaction,
 } from "../types/auction.types";
 
@@ -174,4 +175,11 @@ export const deleteFromWhislistSchema = Joi.object<IAuctionAttributesIdsSchema>(
 export const approveAuctionForAuctionSchema = Joi.object<IApprovePlayerForAuction>({
   playerIds: Joi.array().items(Joi.number().integer().min(1).required()).min(1).required(),
   auctionId: Joi.number().min(1).required(),
+});
+
+export const updatePlayerToTeamSchema = Joi.object<IManageTeam>({
+  auctionId: Joi.number().min(1).required(),
+  teamId: Joi.number().min(1).required(),
+  playerIds: Joi.array().items(Joi.number().integer().min(1).required()),
+  price: Joi.number().min(1).max(999999999999).required().allow(null),
 });

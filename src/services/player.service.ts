@@ -194,4 +194,61 @@ export class PlayerService {
       hasMore,
     };
   }
+
+  async getparticipantPlayersForTeam(
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number,
+    teamId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getParticipantPlayersForTeam(search, offset, limit, auctionId, teamId)
+      ),
+      pool.execute<RowDataPacket[]>(
+         PlayerQueries.geParticipantPlayersCountForTeam(auctionId, search, teamId)
+      ),
+    ]);
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
+  }
+
+  async getPlayersForTeams(
+    page: number = 1,
+    limit: number,
+    search: string = "",
+    auctionId: number
+  ): Promise<{ players: Player[]; total: number; hasMore: boolean }> {
+    const offset = (page - 1) * limit;
+
+    const [result, totalResult] = await Promise.all([
+      pool.execute<RowDataPacket[]>(
+        PlayerQueries.getPlayersForTeam(search, offset, limit, auctionId)
+      ),
+      pool.execute<RowDataPacket[]>(
+         PlayerQueries.getPlayersCountForTeam(auctionId, search)
+      ),
+    ]);
+
+    console.log(totalResult)
+
+    const totalPlayers = totalResult[0][0].total;
+    const hasMore = offset + limit < totalPlayers;
+
+    return {
+      players: result[0].length > 0 ? (result[0] as Player[]) : [],
+      total: totalPlayers,
+      hasMore,
+    };
+  }
 }

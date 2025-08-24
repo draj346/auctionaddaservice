@@ -67,6 +67,10 @@ class AuctionService {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.isValidAuction, [acutionId, playerId]);
         return result?.length > 0 ? result[0].count === 1 : false;
     }
+    static async isValidAuctionPlayerIdForEdit(acutionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.isValidAuctionPlayerIdForEdit, [acutionId]);
+        return result?.length > 0 ? result[0].playerId : null;
+    }
     static async getAuctionDetails(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionDetails, [auctionId]);
         return result?.length > 0 ? result[0] : null;
@@ -125,11 +129,24 @@ class AuctionService {
     }
     static async getTeamsByAuctionId(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamsByAuctionId, [auctionId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getTeamById(auctionId, teamId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamsById, [auctionId, teamId]);
         return result?.length > 0 ? result[0] : null;
     }
-    static async deleteTeamsById(teamId) {
-        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteTeamsById, [teamId]);
-        return result?.length > 0 ? result[0].result : null;
+    static async deleteTeamsById(teamId, isAdminAndAbove, playerId, auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteTeamsById, [
+            teamId,
+            isAdminAndAbove,
+            playerId,
+            auctionId,
+        ]);
+        return result?.length > 0 ? result[0][0].result : null;
+    }
+    static async getTeamCount(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamCount, [auctionId]);
+        return result?.length > 0 ? result[0].count : 0;
     }
     static async assignOwnerToTeam(team) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.assignOwnerToTeam, [
@@ -140,8 +157,12 @@ class AuctionService {
         ]);
         return result.affectedRows > 0;
     }
-    static async removeOwnerFromTeam(teamId, ownerId) {
-        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.removeOwnerFromTeam, [teamId, ownerId]);
+    static async removeOwnerFromTeam(data) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.removeOwnerFromTeam, [
+            data.teamId,
+            data.ownerId,
+            data.auctionId,
+        ]);
         return result.affectedRows > 0;
     }
     static async upsetCategory(category) {
@@ -155,30 +176,42 @@ class AuctionService {
             category.reserveBid,
             category.highestBid,
             category.categoryHighestBid,
-            JSON.stringify(category.increments),
+            category.increments ? JSON.stringify(category.increments) : null,
         ]);
-        return result.affectedRows > 0;
+        return result.affectedRows > 0 ? result.insertId : 0;
     }
     static async getCategoriesByAuctionId(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getCategoriesByAuctionId, [auctionId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getCategoryById(auctionId, categoryId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getCategoriesById, [auctionId, categoryId]);
         return result?.length > 0 ? result[0] : null;
     }
     static async getPlayerByCategoryId(auctionId, categoryId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getPlayerByCategoryId, [categoryId, auctionId]);
         return result?.length > 0 ? result[0] : null;
     }
-    static async deleteCategoryById(categoryId) {
-        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteCategoryById, [categoryId]);
-        return result?.length > 0 ? result[0].result : null;
+    static async deleteCategoryById(categoryId, isAdminAndAbove, playerId, auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteCategoryById, [
+            categoryId,
+            isAdminAndAbove,
+            playerId,
+            auctionId,
+        ]);
+        return result?.length > 0 ? result[0][0].result : null;
     }
     static async updatePlayerToAuction(playerInfo) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updatePlayerToAuction, [
             playerInfo.operation,
             playerInfo.auctionId,
-            playerInfo.categoryId,
+            playerInfo.categoryId || null,
             JSON.stringify(playerInfo.playerIds),
+            playerInfo.baseBid || null,
+            playerInfo.isApproved || false,
+            playerInfo.fileId || null
         ]);
-        return result?.length > 0 ? result[0].result : null;
+        return result?.length > 0 ? result[0][0].result : null;
     }
     static async upsetWishlist(wishlist) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.upsetWishlist, [
@@ -193,6 +226,51 @@ class AuctionService {
     static async deleteFromWhislist(teamId, playerId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.deleteFromWhislist, [teamId, playerId]);
         return result.affectedRows > 0;
+    }
+    static async approvePlayerToAuction(playerInfo) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.MultiUserAuctionQueries.approvePlayerToAuction(playerInfo.playerIds.join(), playerInfo.auctionId));
+        return result.affectedRows > 0;
+    }
+    static async starPlayerForAuction(playerInfo) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.MultiUserAuctionQueries.starPlayerForAuction(playerInfo.playerIds.join(), playerInfo.auctionId));
+        return result.affectedRows > 0;
+    }
+    static async unStarPlayerForAuction(playerInfo) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.MultiUserAuctionQueries.unStarPlayerForAuction(playerInfo.playerIds.join(), playerInfo.auctionId));
+        return result.affectedRows > 0;
+    }
+    static async getTeamOwnerInfo(teamId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamOwnerInfo, [teamId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getPendingPlayerCountForAuction(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getCountAuctionPlayersPending, [auctionId]);
+        return result?.length > 0 ? result[0].total : 0;
+    }
+    static async getAuctionDetailsByCode(code, userId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionDetailByCode, [code]);
+        if (result?.length > 0) {
+            const auctionDetails = result[0];
+            const [joinAuctionStatus] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionStatusForJoin, [
+                userId,
+                auctionDetails.auctionId,
+            ]);
+            if (joinAuctionStatus?.length > 0) {
+                auctionDetails.status = true;
+                auctionDetails.isApproved = joinAuctionStatus[0].isApproved;
+                return auctionDetails;
+            }
+            else {
+                auctionDetails.status = false;
+                auctionDetails.isApproved = false;
+                return auctionDetails;
+            }
+        }
+        return null;
+    }
+    static async getMyAuctions(userId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getMyAuctions, [userId]);
+        return result?.length > 0 ? result : null;
     }
 }
 exports.AuctionService = AuctionService;

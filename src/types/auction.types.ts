@@ -101,6 +101,10 @@ export interface ITeamDetails {
   imageId: number;
   imagePath: string;
   shortcutKey: string;
+  maxPlayerPerTeam: number;
+  minPlayerPerTeam: number;
+  currentPlayerCount: number;
+  playerCount: number;
 }
 
 export interface IAssignOwner {
@@ -155,6 +159,7 @@ export interface ICategoryDetails {
 }
 
 export type IManageAuctionOperation = "ASSIGN_AUCTION" | "ASSIGN_CATEGORY" | "REMOVE_CATEGORY" | "REMOVE_AUCTION" | "ASSIGN_SELF";
+export type IManageTeamOperation = "RETAIN" | "NEW" | "REMOVE";
 
 export interface IManageAuction {
   operation: IManageAuctionOperation;
@@ -164,6 +169,16 @@ export interface IManageAuction {
   baseBid: number;
   isApproved: boolean;
   fileId: number | null;
+}
+
+export interface IManageTeam {
+  operation: IManageTeamOperation;
+  auctionId: number;
+  teamId: number;
+  playerIds: number[];
+  price: number | null;
+  requesterId: number;
+  isAdmin: boolean;
 }
 
 export interface IApprovePlayerForAuction {
@@ -196,6 +211,7 @@ export interface IAuctionStoreProcedureResponse {
   auctionId?: number;
   imageId?: number;
   qrCodeId?: number;
+  limitReached?: boolean;
 }
 
 export interface IAuctionErrors {

@@ -18,7 +18,7 @@ class PlayerService {
         return {
             players: result[0].length > 0 ? result[0] : [],
             total: totalPlayers,
-            hasMore
+            hasMore,
         };
     }
     async getAdmins(page = 1, limit, search = "") {
@@ -32,7 +32,7 @@ class PlayerService {
         return {
             players: result[0].length > 0 ? result[0] : [],
             total: totalPlayers,
-            hasMore
+            hasMore,
         };
     }
     async getPlayerForExport(role, playerIds) {
@@ -46,7 +46,71 @@ class PlayerService {
     }
     async getImageUrl(fileId) {
         const [result] = await db_config_1.default.execute(player_queries_1.publicPlayerQueries.getFileUrl, [fileId]);
-        return result.length > 0 ? result[0].url : '';
+        return result.length > 0 ? result[0].url : "";
+    }
+    async getPlayerForTeamOwner(userId, auctionId, teamId) {
+        const [result] = await db_config_1.default.execute(player_queries_1.publicPlayerQueries.getPlayersForOwner, [userId, auctionId, teamId]);
+        return result.length > 0 ? result : [];
+    }
+    async getPlayerForTeamOwnerByText(userId, teamId, searchText) {
+        const [result] = await db_config_1.default.execute(player_queries_1.publicPlayerQueries.getPlayersForOwnerByName, [userId, teamId, searchText]);
+        return result.length > 0 ? result : [];
+    }
+    async getPlayersForAuction(userId, page = 1, limit, search = "", auctionId) {
+        const offset = (page - 1) * limit;
+        const [result, totalResult] = await Promise.all([
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersForAuction(userId, search, offset, limit, auctionId)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersCountForAuction(auctionId, search)),
+        ]);
+        const totalPlayers = totalResult[0][0].total;
+        const hasMore = offset + limit < totalPlayers;
+        return {
+            players: result[0].length > 0 ? result[0] : [],
+            total: totalPlayers,
+            hasMore,
+        };
+    }
+    async getAddedPlayersForAuction(userId, page = 1, limit, search = "", auctionId) {
+        const offset = (page - 1) * limit;
+        const [result, totalResult] = await Promise.all([
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getAddedPlayersForAuction(userId, search, offset, limit, auctionId)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getAddedPlayersCountForAuction(userId, search, offset, limit, auctionId)),
+        ]);
+        const totalPlayers = totalResult[0][0].total;
+        const hasMore = offset + limit < totalPlayers;
+        return {
+            players: result[0].length > 0 ? result[0] : [],
+            total: totalPlayers,
+            hasMore,
+        };
+    }
+    async getPlayersForCategory(page = 1, limit, search = "", auctionId) {
+        const offset = (page - 1) * limit;
+        const [result, totalResult] = await Promise.all([
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersForCategory(search, offset, limit, auctionId)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getPlayersCountForCategory(auctionId, search)),
+        ]);
+        const totalPlayers = totalResult[0][0].total;
+        const hasMore = offset + limit < totalPlayers;
+        return {
+            players: result[0].length > 0 ? result[0] : [],
+            total: totalPlayers,
+            hasMore,
+        };
+    }
+    async getparticipantPlayersForCategory(page = 1, limit, search = "", auctionId, categoryId) {
+        const offset = (page - 1) * limit;
+        const [result, totalResult] = await Promise.all([
+            db_config_1.default.execute(player_queries_1.PlayerQueries.getParticipantPlayersForCategory(search, offset, limit, auctionId, categoryId)),
+            db_config_1.default.execute(player_queries_1.PlayerQueries.geParticipantPlayersCountForCategory(auctionId, search, categoryId)),
+        ]);
+        const totalPlayers = totalResult[0][0].total;
+        const hasMore = offset + limit < totalPlayers;
+        return {
+            players: result[0].length > 0 ? result[0] : [],
+            total: totalPlayers,
+            hasMore,
+        };
     }
 }
 exports.PlayerService = PlayerService;

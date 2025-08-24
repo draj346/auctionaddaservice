@@ -21,4 +21,6 @@ export const FREE_TEAM_CREATE_LIMIT = process.env.FREE_TEAM_CREATE_LIMIT
   ? parseInt(process.env.FREE_TEAM_CREATE_LIMIT) 
   : 2;
 export const PAYMENT_FILE_UPLOAD_LOCATION = process.env.PAYMENT_FILE_UPLOAD_LOCATION!;
-export const PAYMENT_FILE_UPLOAD_FOLDER = process.env.PAYMENT_FILE_UPLOAD_FOLDER!;
+export const PAYMENT_FILE_UPLOAD_FOLDER = process.env.FILE_UPLOAD_FOLDER!;
+export const EMAIL_FROM = process.env.EMAIL_FROM!;
+export const EMAIL_PASSWORD = process.env.EMAIL_PASSWORD!;

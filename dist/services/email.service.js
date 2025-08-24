@@ -4,28 +4,14 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.EmailService = void 0;
-const mail_1 = __importDefault(require("@sendgrid/mail"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const env_1 = require("../config/env");
+const sendMail_1 = require("../utils/sendMail");
 dotenv_1.default.config();
-mail_1.default.setApiKey(process.env.SENDGRID_API_KEY);
 class EmailService {
-    async sendOTP(email, code) {
+    async sendOTP(email, code, name) {
         console.log(`Sending OTP ${code} to email: ${email}`);
-        const msg = {
-            to: email,
-            from: process.env.SENDGRID_FROM_EMAIL,
-            subject: "Your One-Time Password (OTP)",
-            html: `
-      <div>
-        <h3>Verification Code</h3>
-        <p>Your OTP is: <strong>${code}</strong></p>
-        <p>Expires in ${env_1.OTP_EXPIRY_MINUTES} minutes.</p>
-      </div>
-    `,
-        };
         try {
-            await mail_1.default.send(msg);
+            await (0, sendMail_1.sendOtpEmail)({ name, to: email, otp: code });
             return true;
         }
         catch (error) {
