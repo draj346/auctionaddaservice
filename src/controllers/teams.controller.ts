@@ -16,6 +16,7 @@ import {
 import { FileService } from "../services/file.service";
 import { FREE_TEAM_CREATE_LIMIT } from "../config/env";
 import { PlayerRole } from "../constants/roles.constants";
+import { RoleService } from "../services/role.service";
 
 const fileService = new FileService();
 
@@ -176,6 +177,20 @@ export class TeamsController {
       }
       let teamResponse = await AuctionService.assignOwnerToTeam(data);
       if (teamResponse) {
+        const ownerRole = await RoleService.getUserRole(data.ownerId) as PlayerRole;
+        if (RoleHelper.isPlayer(ownerRole)) {
+          const roleResult = await RoleService.createOwner(data.ownerId);
+          if (roleResult) {
+            NotificationService.createNotification(
+              data.ownerId,
+              NotificationMessage.CHANGE_ROLE_TO_OWNER,
+              NOTIFICATIONS.ROLE_UPDATED as NotificationType,
+              req.userId,
+              req.role
+            );
+          }
+        }
+
         ApiResponse.success(res, teamResponse, 200, "Team Details!!");
       } else {
         ApiResponse.error(res, "Unable to retrieve Team. Please try again", 200, { isNotFound: true });
@@ -197,6 +212,19 @@ export class TeamsController {
       }
       let teamResponse = await AuctionService.removeOwnerFromTeam(data);
       if (teamResponse) {
+        const ownerRole = await RoleService.getUserRole(data.ownerId) as PlayerRole;
+        if (RoleHelper.isOwner(ownerRole)) {
+          const roleResult = await RoleService.deleteRole(data.ownerId);
+          if (roleResult) {
+            NotificationService.createNotification(
+              data.ownerId,
+              NotificationMessage.REMOVE_ROLE_FROM_OWNER,
+              NOTIFICATIONS.ROLE_UPDATED as NotificationType,
+              req.userId,
+              req.role
+            );
+          }
+        }
         ApiResponse.success(res, {}, 200, "Team Owner Removed!!");
       } else {
         ApiResponse.error(res, "Unable to remove from Team Owner. Please try again", 200, { isNotFound: true });
@@ -311,8 +339,13 @@ export class TeamsController {
 
   private static canAddNewTeam = async (auctionId: number) => {
     try {
-      let countResponse = await AuctionService.getTeamCount(auctionId);
-      return countResponse < FREE_TEAM_CREATE_LIMIT;
+      const auctionPaymentStatus = await AuctionService.isPaymentDoneForAuction(auctionId);
+      if (!auctionPaymentStatus) {
+        let countResponse = await AuctionService.getTeamCount(auctionId);
+        return countResponse < FREE_TEAM_CREATE_LIMIT;
+      } else {
+        return true;
+      }
     } catch (error) {
       console.log(error);
       return false;

@@ -31,8 +31,8 @@ export class AuthController {
         return ApiResponse.error(res, "Invalid phone number", 400);
       }
 
-      const isValidUser = await AuthService.isValidUser(null, identifier);
-      if (!isValidUser) {
+      const userInfo = await AuthService.getPlayerIdByIdentifier(identifier);
+      if (!userInfo) {
         return ApiResponse.error(res, "User is not valid", 401, {
           isNotFound: true,
         });
@@ -46,7 +46,8 @@ export class AuthController {
       if (method === "email") {
         isSuccess = await emailService.sendOTP(identifier, code, req.name);
       } else {
-        isSuccess = await smsService.sendOTP(identifier, code);
+        // isSuccess = await smsService.sendOTP(identifier, code);
+        isSuccess = await emailService.sendOTP(userInfo.email, code, userInfo.name);
       }
 
       if (isSuccess) {

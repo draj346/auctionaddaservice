@@ -81,6 +81,38 @@ AuctionController.getAuctions = async (req, res) => {
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };
+AuctionController.getUpcomingAuctions = async (req, res) => {
+    try {
+        let auctionResponse = await auction_service_1.AuctionService.getUpcomingAuctions();
+        if (auctionResponse) {
+            auctionResponse = await _a.updateFilePaths(auctionResponse);
+            apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Auctions retrieve successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.success(res, [], 200, "Something went happen. Please try again.");
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+AuctionController.getLiveAuctions = async (req, res) => {
+    try {
+        let auctionResponse = await auction_service_1.AuctionService.getLiveAuctions();
+        if (auctionResponse) {
+            auctionResponse = await _a.updateFilePaths(auctionResponse);
+            apiResponse_1.ApiResponse.success(res, auctionResponse, 200, "Auctions retrieve successfully!!");
+        }
+        else {
+            apiResponse_1.ApiResponse.success(res, [], 200, "Something went happen. Please try again.");
+        }
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
 AuctionController.getAuctionsForCopy = async (req, res) => {
     try {
         if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
@@ -107,7 +139,7 @@ AuctionController.copyAuction = async (req, res) => {
                 return apiResponse_1.ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
             }
         }
-        const auctionResponse = await auction_service_1.AuctionService.copyAuctionById(auctionId, req.userId, isAdmin);
+        const auctionResponse = await auction_service_1.AuctionService.copyAuctionById(auctionId, req.userId, isAdmin, env_1.FREE_TEAM_CREATE_LIMIT);
         if (auctionResponse) {
             const response = {};
             if (auctionResponse?.status && auctionResponse.auctionId) {
@@ -231,7 +263,7 @@ AuctionController.approveAuction = async (req, res) => {
         let auctionResponse = await auction_service_1.AuctionService.approveAuction(auctionId);
         if (auctionResponse) {
             const auctionInfo = await auction_service_1.AuctionService.getAuctionName(auctionId);
-            if (auctionInfo?.playerId) {
+            if (auctionInfo?.playerId && !roles_helpers_1.RoleHelper.isOrganiserAndAbove(req.role)) {
                 const roleResult = await role_service_1.RoleService.createOrganiser(auctionInfo?.playerId);
                 if (roleResult) {
                     notification_service_1.NotificationService.createNotification(auctionInfo.playerId, notification_constants_1.NotificationMessage.CHANGE_ROLE_TO_ORGANISER, notification_constants_1.NOTIFICATIONS.ROLE_UPDATED, req.userId, req.role);

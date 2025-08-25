@@ -268,3 +268,43 @@ PlayerController.getParticipantPlayersForCategory = async (req, res) => {
         apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
 };
+PlayerController.getParticipantPlayersForTeams = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const teamId = parseInt(req.params.teamId);
+        const data = req.query;
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getparticipantPlayersForTeam(page, limit, search, auctionId, teamId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};
+PlayerController.getPlayersForTeam = async (req, res) => {
+    try {
+        const auctionId = parseInt(req.params.auctionId);
+        const data = req.query;
+        const auctionInfo = await auction_service_1.AuctionService.getAuctionPlayerId(auctionId);
+        if (!auctionInfo) {
+            return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+        if (!roles_helpers_1.RoleHelper.isAdminAndAbove(req.role)) {
+            if (auctionInfo.playerId !== req.userId) {
+                return apiResponse_1.ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+            }
+        }
+        const page = data.page || 1;
+        const search = data.search || "";
+        const limit = 100;
+        const { players, total, hasMore } = await playerService.getPlayersForTeams(page, limit, search, auctionId);
+        apiResponse_1.ApiResponse.success(res, { players, total, hasMore }, 200, "Players retrieved successfully");
+    }
+    catch (error) {
+        console.log(error);
+        apiResponse_1.ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+};

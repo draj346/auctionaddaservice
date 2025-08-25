@@ -32,7 +32,7 @@ CREATE TABLE player_images (
 
 CREATE TABLE player_informations (
   playerId INT PRIMARY KEY,
-  jerseyNumber TINYINT UNSIGNED NULL,
+  jerseyNumber SMALLINT UNSIGNED NULL,
   tShirtSize ENUM('XS','S','M','L','XL','XXL') NULL,
   lowerSize ENUM('XS','S','M','L','XL','XXL') NULL,
   playerRole VARCHAR(30) NULL,

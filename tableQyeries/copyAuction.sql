@@ -3,7 +3,8 @@ DELIMITER $$
 CREATE PROCEDURE CopyAuction(
     IN p_auctionId INT,
     IN p_playerId INT,
-    IN p_isAdmin BOOLEAN
+    IN p_isAdmin BOOLEAN,
+    IN p_teamlimit INT
 )
 proc:BEGIN
     DECLARE v_ownerPlayerId INT DEFAULT NULL;
@@ -116,7 +117,8 @@ proc:BEGIN
     FROM teams
     WHERE auctionId = p_auctionId 
       AND isActive = TRUE
-    ORDER BY teamId; 
+    ORDER BY teamId
+    LIMIT p_teamlimit; 
 
     COMMIT;
 

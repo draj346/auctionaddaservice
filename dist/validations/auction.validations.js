@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.approveAuctionForAuctionSchema = exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToCategorySchema = exports.JoinAuctionSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.auctionTeamIdSchema = exports.auctionFileIdSchema = exports.auctionCategoryIdSchema = exports.teamIdSchema = exports.auctionCodeSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
+exports.updatePlayerToTeamSchema = exports.approveAuctionForAuctionSchema = exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToCategorySchema = exports.JoinAuctionSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.auctionTeamIdSchema = exports.auctionFileIdSchema = exports.auctionCategoryIdSchema = exports.teamIdSchema = exports.auctionCodeSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.upsetAuctionSchema = joi_1.default.object({
     auctionId: joi_1.default.number().required().allow(null),
@@ -144,4 +144,10 @@ exports.deleteFromWhislistSchema = joi_1.default.object({
 exports.approveAuctionForAuctionSchema = joi_1.default.object({
     playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()).min(1).required(),
     auctionId: joi_1.default.number().min(1).required(),
+});
+exports.updatePlayerToTeamSchema = joi_1.default.object({
+    auctionId: joi_1.default.number().min(1).required(),
+    teamId: joi_1.default.number().min(1).required(),
+    playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()),
+    price: joi_1.default.number().min(1).max(999999999999).required().allow(null),
 });

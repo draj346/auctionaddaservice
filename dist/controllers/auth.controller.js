@@ -36,8 +36,8 @@ AuthController.sendOTP = async (req, res) => {
         else if (method === "otp" && !/^\d{10,}$/.test(identifier)) {
             return apiResponse_1.ApiResponse.error(res, "Invalid phone number", 400);
         }
-        const isValidUser = await auth_service_1.AuthService.isValidUser(null, identifier);
-        if (!isValidUser) {
+        const userInfo = await auth_service_1.AuthService.getPlayerIdByIdentifier(identifier);
+        if (!userInfo) {
             return apiResponse_1.ApiResponse.error(res, "User is not valid", 401, {
                 isNotFound: true,
             });
@@ -50,7 +50,8 @@ AuthController.sendOTP = async (req, res) => {
             isSuccess = await emailService.sendOTP(identifier, code, req.name);
         }
         else {
-            isSuccess = await smsService.sendOTP(identifier, code);
+            // isSuccess = await smsService.sendOTP(identifier, code);
+            isSuccess = await emailService.sendOTP(userInfo.email, code, userInfo.name);
         }
         if (isSuccess) {
             apiResponse_1.ApiResponse.success(res, { sessionId }, 200, "OTP sent successfully");

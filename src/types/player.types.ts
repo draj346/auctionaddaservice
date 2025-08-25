@@ -36,6 +36,14 @@ export interface InitialRegistrationData {
   district?: string;
 }
 
+export interface IBasicDetails {
+  name?: string;
+  mobile?: string;
+  email?: string;
+  state?: string;
+  district?: string;
+}
+
 export interface UpdateProfileSchemaData {
   state?: string;
   district?: string;
@@ -51,7 +59,7 @@ export interface UpdateProfileSchemaData {
   playerRole?: PLAYER_ROLES;
   battingStyle?: BATTING_STYLES;
   bowlingStyle?: BOWLING_STYLES;
-  description?: string
+  description?: string;
 }
 
 export interface AddProfileSchemaData {

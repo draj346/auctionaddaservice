@@ -246,5 +246,9 @@ class RegistrationService {
         const [result] = await db_config_1.default.execute(registration_queries_1.RegistrationQueries.updateImage, [playerId, fileId, fileId]);
         return result.affectedRows > 0;
     }
+    async getPlayerEmailById(playerId) {
+        const [result] = await db_config_1.default.execute(registration_queries_1.RegistrationQueries.getUserByPlayerId, [playerId]);
+        return result?.length > 0 ? result[0] : null;
+    }
 }
 exports.RegistrationService = RegistrationService;

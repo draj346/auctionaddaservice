@@ -44,6 +44,7 @@ const notification_service_1 = require("../services/notification.service");
 const notification_constants_1 = require("../constants/notification.constants");
 const player_service_1 = require("../services/player.service");
 const common_1 = require("../utils/common");
+const sendMail_1 = require("../utils/sendMail");
 const registrationService = new registration_service_1.RegistrationService();
 const playerService = new player_service_1.PlayerService();
 class RegistrationController {
@@ -73,6 +74,10 @@ RegistrationController.addPlayerInformation = async (req, res) => {
         }
         const success = await registrationService.addPlayerInformation(data);
         if (success) {
+            const userInfo = await registrationService.getPlayerEmailById(data.playerId);
+            if (userInfo?.email) {
+                (0, sendMail_1.sendRegistrationEmail)(userInfo.email, userInfo.name || "");
+            }
             notification_service_1.NotificationService.createNotification(data.playerId, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_SELF, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, data.playerId, req.role);
             apiResponse_1.ApiResponse.success(res, null, 200, "Registration completed successfully");
         }
@@ -90,6 +95,7 @@ RegistrationController.addPlayers = async (req, res) => {
         const data = req.body;
         const result = await registrationService.createProfile(data);
         if (result && result.playerId) {
+            (0, sendMail_1.sendRegistrationEmail)(data.email, data.name);
             apiResponse_1.ApiResponse.success(res, { ...result }, 200, "Player added successfully");
             notification_service_1.NotificationService.createNotification(result.playerId, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, req.userId, req.role);
         }
@@ -285,12 +291,14 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
             XLSX.utils.sheet_add_aoa(worksheet, [["Result"]], { origin: "Q1" });
         }
         const allowedPlayerIds = [];
+        const emailIds = [];
         const processedUsers = await Promise.all(users.map(async (user, index) => {
             const row = index + 2;
             try {
                 const response = await registrationService.createProfileForExcel(user);
                 if (response.playerId) {
                     allowedPlayerIds.push(response.playerId);
+                    emailIds.push(user.Email);
                 }
                 return { ...user, Result: "Success", Row: row };
             }
@@ -307,6 +315,9 @@ RegistrationController.AddMultiplePlayers = async (req, res) => {
                 origin: `Q${user.Row}`,
             });
         });
+        if (emailIds.length > 0) {
+            (0, sendMail_1.sendRegistrationEmail)(emailIds, '');
+        }
         notification_service_1.NotificationService.batchCreateNotification(allowedPlayerIds, notification_constants_1.NotificationMessage.ACCOUNT_CREATE_BY_ELSE, notification_constants_1.NOTIFICATIONS.PROFILE_CREATED, req.userId, req.role);
         const updatedBuffer = XLSX.write(workbook, {
             type: "buffer",

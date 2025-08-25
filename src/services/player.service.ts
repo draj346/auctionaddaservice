@@ -240,8 +240,6 @@ export class PlayerService {
       ),
     ]);
 
-    console.log(totalResult)
-
     const totalPlayers = totalResult[0][0].total;
     const hasMore = offset + limit < totalPlayers;
 

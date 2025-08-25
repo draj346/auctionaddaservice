@@ -93,7 +93,7 @@ router.post('/login', (0, validation_middleware_1.validate)(authValidation.login
 //Contact Message
 router.post('/addComment', (0, validation_middleware_1.validate)(contactValidation.insertMessageSchema), contact_controller_1.ContactController.insertComment);
 //Guest
-router.get('/banner', common_controller_1.CommonController.getBanner);
+router.get('/banners', common_controller_1.CommonController.getBanner);
 router.get('/discount', common_controller_1.CommonController.getDiscount);
 router.get('/videos', common_controller_1.CommonController.getYoutubeVideos);
 // Protected routes under /auth
@@ -131,6 +131,8 @@ router.post('/auth/auctions/upload', (0, validation_middleware_1.validate)(fileV
 router.post('/auth/auctions/payment/upload', (0, validation_middleware_1.validate)(fileValidation.uploadFileForJoiningAuctionSchema), file_controller_1.FileController.uploadFileForJoiningAuctionSchema);
 router.post('/auth/auctions/new', (0, validation_middleware_1.validate)(auctionValidation.upsetAuctionSchema), auction_controller_1.AuctionController.upsetAuction);
 router.get('/auth/auctions', auction_controller_1.AuctionController.getAuctions);
+router.get('/auth/auctions/upcoming', auction_controller_1.AuctionController.getUpcomingAuctions);
+router.get('/auth/auctions/live', auction_controller_1.AuctionController.getLiveAuctions);
 router.get('/auth/auctions/my', auction_controller_1.AuctionController.getMyAuctions);
 router.get('/auth/auctions/forCopy', auction_controller_1.AuctionController.getAuctionsForCopy);
 router.post('/auth/auctions/:auctionId/copy', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.copyAuction);
@@ -158,8 +160,14 @@ router.delete('/auth/team/owner/remove', (0, validation_middleware_1.validate)(a
 router.get('/auth/auctions/:auctionId/canAddTeam', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), teams_controller_1.TeamsController.canAddTeam);
 router.get('/auth/auctions/:auctionId/playersForAuction', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getPlayersForAuction);
 router.get('/auth/auctions/:auctionId/playersForCategory', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getPlayersForCategory);
+router.get('/auth/auctions/:auctionId/playersForTeam', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getPlayersForTeam);
 router.get('/auth/auctions/:auctionId/players/count', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), auction_controller_1.AuctionController.getPendingPlayerCountForAuction);
 router.get('/auth/auctions/:auctionId/players/participants', (0, validation_middleware_1.validate)(auctionValidation.auctionIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getAddedPlayersForAuction);
+router.post('/auth/auctions/team/players/retain', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToTeamSchema), teams_controller_1.TeamsController.retainPlayerToTeam);
+router.post('/auth/auctions/team/players/add', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToTeamSchema), teams_controller_1.TeamsController.addPlayerToTeam);
+router.delete('/auth/auctions/team/players/remove', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToTeamSchema), teams_controller_1.TeamsController.removePlayerFromTeam);
+router.get('/auth/auctions/:auctionId/teams/:teamId/participants', (0, validation_middleware_1.validate)(auctionValidation.auctionTeamIdSchema, 'params'), (0, validation_middleware_1.validate)(playerValidation.auctionPlayerPaginationSchema, "query"), player_controller_1.PlayerController.getParticipantPlayersForTeams);
+router.get('/auth/auctions/:auctionId/teams/:teamId/players/count', (0, validation_middleware_1.validate)(auctionValidation.auctionTeamIdSchema, 'params'), teams_controller_1.TeamsController.getTeamPlayerCount);
 //Add Players
 router.post('/auth/auctions/players/add', (0, validation_middleware_1.validate)(auctionValidation.updatePlayerToAuctionSchema), auction_controller_1.AuctionController.addPlayerToAuction);
 router.post('/auth/auctions/players/join', (0, validation_middleware_1.validate)(auctionValidation.JoinAuctionSchema), auction_controller_1.AuctionController.joinPlayerToAuction);

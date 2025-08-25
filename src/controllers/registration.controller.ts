@@ -16,6 +16,7 @@ import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { PlayerService } from "../services/player.service";
 import { getChangedData } from "../utils/common";
+import { sendRegistrationEmail } from "../utils/sendMail";
 
 const registrationService = new RegistrationService();
 const playerService = new PlayerService();
@@ -53,6 +54,10 @@ export class RegistrationController {
       const success = await registrationService.addPlayerInformation(data);
 
       if (success) {
+        const userInfo = await registrationService.getPlayerEmailById(data.playerId);
+        if (userInfo?.email) {
+          sendRegistrationEmail(userInfo.email, userInfo.name || "")
+        }
         NotificationService.createNotification(
           data.playerId,
           NotificationMessage.ACCOUNT_CREATE_BY_SELF,
@@ -76,6 +81,7 @@ export class RegistrationController {
       const result = await registrationService.createProfile(data);
 
       if (result && result.playerId) {
+        sendRegistrationEmail(data.email, data.name)
         ApiResponse.success(res, { ...result }, 200, "Player added successfully");
         NotificationService.createNotification(
           result.playerId,
@@ -317,6 +323,7 @@ export class RegistrationController {
       }
 
       const allowedPlayerIds: number[] = [];
+      const emailIds: string[] = [];
       const processedUsers = await Promise.all(
         users.map(async (user, index) => {
           const row = index + 2;
@@ -324,6 +331,7 @@ export class RegistrationController {
             const response = await registrationService.createProfileForExcel(user);
             if (response.playerId) {
               allowedPlayerIds.push(response.playerId);
+              emailIds.push(user.Email);
             }
             return { ...user, Result: "Success", Row: row };
           } catch (error: any) {
@@ -341,6 +349,10 @@ export class RegistrationController {
           origin: `Q${user.Row}`,
         });
       });
+
+      if (emailIds.length > 0 ) {
+        sendRegistrationEmail(emailIds, '');  
+      }
 
       NotificationService.batchCreateNotification(
         allowedPlayerIds,

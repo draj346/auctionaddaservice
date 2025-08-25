@@ -39,12 +39,24 @@ class AuctionService {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.checkAuctionPending, [playerId]);
         return result?.length > 0 ? result[0].count >= env_1.FREE_AUCTION_CREATE_LIMIT : false;
     }
+    static async isPaymentDoneForAuction(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.isPaymentDoneForAuction, [auctionId]);
+        return result?.length > 0 ? result[0].count === 1 : false;
+    }
     static async getAuctionPlayerId(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionPlayerId, [auctionId]);
         return result?.length > 0 ? result[0] : null;
     }
     static async getAuctions(playerId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctions, [playerId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getUpcomingAuctions() {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getUpcomingAuctions);
+        return result?.length > 0 ? result : null;
+    }
+    static async getLiveAuctions() {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getLiveAuctions);
         return result?.length > 0 ? result : null;
     }
     static async getAuctionsForCopy(playerId, role) {
@@ -87,11 +99,12 @@ class AuctionService {
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
-    static async copyAuctionById(auctionId, playerId, isAdmin) {
+    static async copyAuctionById(auctionId, playerId, isAdmin, teamLimit) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.copyAuctionById, [
             auctionId,
             playerId,
             isAdmin,
+            teamLimit
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
@@ -146,6 +159,10 @@ class AuctionService {
     }
     static async getTeamCount(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamCount, [auctionId]);
+        return result?.length > 0 ? result[0].count : 0;
+    }
+    static async getTeamPlayerCount(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getPlayerCountForTeam, [auctionId]);
         return result?.length > 0 ? result[0].count : 0;
     }
     static async assignOwnerToTeam(team) {
@@ -213,6 +230,18 @@ class AuctionService {
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
+    static async updatePlayerToTeam(playerInfo) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updatePlayerToTeam, [
+            playerInfo.operation,
+            playerInfo.auctionId,
+            playerInfo.teamId,
+            JSON.stringify(playerInfo.playerIds),
+            playerInfo.price || null,
+            playerInfo.requesterId,
+            playerInfo.isAdmin
+        ]);
+        return result?.length > 0 ? result[0][0].result : null;
+    }
     static async upsetWishlist(wishlist) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.upsetWishlist, [
             wishlist.id || null,
@@ -245,6 +274,10 @@ class AuctionService {
     }
     static async getPendingPlayerCountForAuction(auctionId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getCountAuctionPlayersPending, [auctionId]);
+        return result?.length > 0 ? result[0].total : 0;
+    }
+    static async getTeamPlayerCountByTeamId(auctionId, teamId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamPlayerCountById, [auctionId, teamId]);
         return result?.length > 0 ? result[0].total : 0;
     }
     static async getAuctionDetailsByCode(code, userId) {

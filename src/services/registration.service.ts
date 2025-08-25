@@ -6,6 +6,7 @@ import {
   PlayerExistsSchema,
   AddProfileSchemaData,
   AddProfileExcelSchema,
+  IBasicDetails,
 } from "../types/player.types";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
 
@@ -304,5 +305,10 @@ export class RegistrationService {
   async updateImageId(fileId: number, playerId: number): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(RegistrationQueries.updateImage, [playerId, fileId, fileId]);
     return result.affectedRows > 0;
+  }
+
+    async getPlayerEmailById(playerId: number): Promise<IBasicDetails | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(RegistrationQueries.getUserByPlayerId, [playerId]);
+    return result?.length > 0 ? result[0] as IBasicDetails : null;
   }
 }

@@ -24,5 +24,11 @@ class RoleHelper {
     static isOwnerOrBelow(role) {
         return [roles_constants_1.ROLES.OWNER, roles_constants_1.ROLES.PLAYER].includes(role);
     }
+    static isPlayer(role) {
+        return [roles_constants_1.ROLES.PLAYER].includes(role);
+    }
+    static isOwner(role) {
+        return [roles_constants_1.ROLES.OWNER].includes(role);
+    }
 }
 exports.RoleHelper = RoleHelper;

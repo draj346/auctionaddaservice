@@ -105,6 +105,8 @@ router.post('/auth/auctions/upload', validate(fileValidation.userUploadForAuctio
 router.post('/auth/auctions/payment/upload', validate(fileValidation.uploadFileForJoiningAuctionSchema), FileController.uploadFileForJoiningAuctionSchema);
 router.post('/auth/auctions/new', validate(auctionValidation.upsetAuctionSchema), AuctionController.upsetAuction);
 router.get('/auth/auctions', AuctionController.getAuctions);
+router.get('/auth/auctions/upcoming', AuctionController.getUpcomingAuctions);
+router.get('/auth/auctions/live', AuctionController.getLiveAuctions);
 router.get('/auth/auctions/my', AuctionController.getMyAuctions);
 router.get('/auth/auctions/forCopy', AuctionController.getAuctionsForCopy);
 router.post('/auth/auctions/:auctionId/copy', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.copyAuction);

@@ -62,6 +62,11 @@ export class AuctionService {
     return result?.length > 0 ? result[0].count >= FREE_AUCTION_CREATE_LIMIT : false;
   }
 
+  public static async isPaymentDoneForAuction(auctionId: number): Promise<boolean> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.isPaymentDoneForAuction, [auctionId]);
+    return result?.length > 0 ? result[0].count === 1 : false;
+  }
+
   public static async getAuctionPlayerId(auctionId: number): Promise<IAuctionPlayerIdWithName | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctionPlayerId, [auctionId]);
     return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
@@ -69,6 +74,16 @@ export class AuctionService {
 
   public static async getAuctions(playerId: number): Promise<IAuctionDetails[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctions, [playerId]);
+    return result?.length > 0 ? (result as IAuctionDetails[]) : null;
+  }
+
+  public static async getUpcomingAuctions(): Promise<IAuctionDetails[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getUpcomingAuctions);
+    return result?.length > 0 ? (result as IAuctionDetails[]) : null;
+  }
+
+   public static async getLiveAuctions(): Promise<IAuctionDetails[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getLiveAuctions);
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;
   }
 
@@ -131,12 +146,14 @@ export class AuctionService {
   public static async copyAuctionById(
     auctionId: number,
     playerId: number,
-    isAdmin: boolean
+    isAdmin: boolean,
+    teamLimit: number,
   ): Promise<IAuctionStoreProcedureResponse | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.copyAuctionById, [
       auctionId,
       playerId,
       isAdmin,
+      teamLimit
     ]);
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
