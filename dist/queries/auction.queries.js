@@ -42,6 +42,7 @@ exports.AuctionQueries = {
     isPaymentDoneForAuction: `SELECT count(*) as count from auctions where auctionId = ? AND paymentStatus is True AND isActive is True`,
     isOrganiser: `select count(*) as count from auctions where paymentStatus is true and playerId = ? and isActive is true and (isLive is false or (isLive is true and startDate <=CURDATE()))`,
     getAuctionPlayerId: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True AND isLive is False`,
+    getLiveAuctionPlayerId: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True AND isCompleted is False`,
     isValidAuction: `SELECT count(*) as count from auctions where auctionId = ? AND playerId =? AND isActive is True`,
     isValidAuctionPlayerIdForEdit: `SELECT playerId from auctions where auctionId = ? AND isActive is True and isLive is False`,
     getAuctions: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
@@ -67,9 +68,20 @@ exports.AuctionQueries = {
         END
     ) as label from auctions where isActive is True ORDER BY startdate DESC LIMIT 100`,
     getAuctionDetails: `SELECT imageId, name, season, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
-                code, isLive, isCompleted, pointPerTeam, baseBid, baseIncreaseBy, isPaymentInCompanyAccount, qrCodeId, auctionRule as rule  from auctions where isActive is True and auctionId = ?`,
+                code, isLive, IF(
+                          isCompleted OR 
+                          (isLive AND startDate <= DATE_SUB(CURRENT_DATE, INTERVAL 2 DAY)),
+                          true, 
+                          false
+                      ) AS isCompleted, pointPerTeam, baseBid, baseIncreaseBy, isPaymentInCompanyAccount, qrCodeId, auctionRule as rule  from auctions where isActive is True and auctionId = ?`,
     getAuctionSearchByAdmin: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
-                code, isLive, isCompleted, pointPerTeam, baseBid, baseIncreaseBy from auctions where 
+                code, isLive, SELECT imageId, name, season, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
+                code, isLive, IF(
+                          isCompleted OR 
+                          (isLive AND startDate <= DATE_SUB(CURRENT_DATE, INTERVAL 2 DAY)),
+                          true, 
+                          false
+                      ) AS isCompleted, pointPerTeam, baseBid, baseIncreaseBy, isPaymentInCompanyAccount, qrCodeId, auctionRule as rule  from auctions where isActive is True and auctionId = , pointPerTeam, baseBid, baseIncreaseBy from auctions where 
                 code LIKE CONCAT('%', ?, '%') OR name LIKE CONCAT('%', ?, '%')`,
     deleteAuctionById: `CALL AuctionDeletion(?, ?, ?)`,
     copyAuctionById: `CALL CopyAuction(?, ?, ?, ?)`,
@@ -166,6 +178,7 @@ exports.AuctionQueries = {
     deleteCategoryById: `CALL DeleteCategory(?, ?, ?, ?)`,
     updatePlayerToAuction: `CALL ManageAuctionPlayers(?, ?, ?, ?, ?, ?, ?)`,
     updatePlayerToTeam: `CALL ManageTeamPlayers(?, ?, ?, ?, ?, ?, ?)`,
+    resetAuctionPlayers: `CALL ResetAuctionPlayers(?, ?, ?)`,
     upsetWishlist: `INSERT INTO team_wishlist (
                     id,
                     teamId,
@@ -178,6 +191,7 @@ exports.AuctionQueries = {
                     tag = VALUES(tag);`,
     deleteFromWhislist: `DELETE FROM team_wishlist WHERE teamId = ? and playerId = ?`,
     getTeamOwnerInfo: `SELECT t.tag, p.name, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.teamId = ?`,
+    getOnwers: `select to2.tag, to2.name from team_owner to2 where auctionId = ? `,
     getCountAuctionPlayersPending: `select count(*) as total from auction_category_player where auctionId = ?`,
     getTeamPlayerCountById: `select count(*) as total from auction_team_player where auctionId = ? and teamId = ?`,
     getAuctionDetailByCode: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, DATE_FORMAT(startDate, '%d-%m-%Y') AS startDate, startTime, maxPlayerPerTeam, minPlayerPerTeam,
@@ -190,6 +204,78 @@ exports.AuctionQueries = {
                   LEFT JOIN auction_category_player acp ON a.auctionId = acp.auctionId
                   WHERE acp.playerId =?`,
     getAuctionStatusForJoin: `SELECT isApproved from auction_category_player acp WHERE acp.playerId = ? AND acp.auctionId = ?`,
+    getTeamByAuctionId: `select teamId, name, shortName, shortcutKey, image as imageId from teams where auctionId = ?`,
+    getOwnerByAuctionId: `SELECT t.tag as type, p.name, t.teamId, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.auctionId = ?`,
+    getFirstOwnerByAuctionId: `SELECT 
+                              to1.teamId,
+                              p.name
+                            FROM team_owner to1
+                            INNER JOIN players p ON to1.ownerId = p.playerId
+                            WHERE to1.auctionId = ? 
+                              AND to1.tag = 'OWNER'
+                              AND to1.id = (
+                                SELECT MIN(to2.id)
+                                FROM team_owner to2
+                                WHERE to2.teamId = to1.teamId
+                                  AND to2.auctionId = to1.auctionId
+                                  AND to2.tag = 'OWNER'
+                              )`,
+    getPlayersByAuctionId: `
+                        SELECT 
+                          ROW_NUMBER() OVER (ORDER BY p.playerId) as number,
+                          p.name,
+                          pi.playerRole,
+                          pi.bowlingStyle,
+                          pi.battingStyle,
+                          f.url as image,
+                          LOWER(acp.status) as status,
+                          pi.description,
+                          ac.name as categoryName,
+                          ac.categoryHighestBid as maxBidAmount,
+                          p.playerId,
+                          acp.star,
+                          acp.baseBid,
+                          t.name as team,
+                          atp.price as points,
+                          atp.status as soldStatus,
+                          t.teamId
+                        FROM auction_category_player acp
+                        INNER JOIN players p ON acp.playerId = p.playerId
+                        LEFT JOIN player_informations pi ON p.playerId = pi.playerId
+                        LEFT JOIN player_images pimg ON p.playerId = pimg.playerId
+                        LEFT JOIN files f ON pimg.imageId = f.fileId
+                        LEFT JOIN auction_category ac ON acp.categoryId = ac.categoryId AND acp.auctionId = ac.auctionId
+                        LEFT JOIN auction_team_player atp ON acp.playerId = atp.playerId AND acp.auctionId = atp.auctionId AND atp.isActive = TRUE
+                        LEFT JOIN teams t ON atp.teamId = t.teamId AND t.auctionId = acp.auctionId
+                        WHERE acp.auctionId = ?
+                        AND acp.isApproved = TRUE
+                        ORDER BY p.playerId;
+  `,
+    getAuctionInfo: `SELECT 
+                      season, 
+                      paymentStatus, 
+                      startDate, 
+                      maxPlayerPerTeam, 
+                      isLive, 
+                      IF(
+                          isCompleted OR 
+                          (isLive AND startDate <= DATE_SUB(CURRENT_DATE, INTERVAL 2 DAY)),
+                          true, 
+                          false
+                      ) AS isCompleted,
+                      pointPerTeam, 
+                      baseBid, 
+                      baseIncreaseBy, 
+                      LOWER(players_selection_rule) AS playerOrder 
+                  FROM auctions 
+                  WHERE auctionId = ?`,
+    updatePlayerStatus: `update auction_category_player set status = ? where auctionId = ? and playerId = ?`,
+    reauctionUnsoldPlayer: `UPDATE auction_category_player acp
+        SET acp.status = 'AVAILABLE'
+        WHERE acp.auctionId = ? 
+        AND acp.status = 'UNSOLD'`,
+    updatePlayerOrder: `UPDATE auctions set players_selection_rule = ? WHERE auctionId = ?`,
+    updateAuctionMode: `UPDATE auctions set isLive = True WHERE auctionId = ? and paymentStatus is True and isActive is True;`,
 };
 exports.MultiUserAuctionQueries = {
     approvePlayerToAuction: (ids, auctionId) => {

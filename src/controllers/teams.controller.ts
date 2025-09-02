@@ -6,6 +6,7 @@ import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionsHelper } from "../helpers/auctions.helpers";
 import {
+  AuctionTeamSummaryData,
   IAssignOwner,
   ICreateTeam,
   IManageTeam,
@@ -166,6 +167,42 @@ export class TeamsController {
     }
   };
 
+  static getTeamsByAuctionId = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      let teamResponse = await AuctionService.getTeamByAuctionId(auctionId);
+      let teamOwnerResponse = await AuctionService.getOwnerByAuctionId(auctionId);
+      if (teamResponse) {
+        teamResponse = await this.updateAuctionFilePaths(teamResponse);
+        const teamsWithOwners = teamResponse.map((team) => {
+          const teamOwners =
+            teamOwnerResponse
+              ?.filter((owner) => owner.teamId === team.teamId)
+              ?.map((owner) => ({
+                name: owner.name,
+                type: owner.type,
+                playerId: owner.playerId
+              })) || [];
+
+          return {
+            image: team.image || "",
+            name: team.name,
+            shortName: team.shortName,
+            shortcutKey: team.shortcutKey,
+            teamId: team.teamId,
+            owners: teamOwners,
+          };
+        });
+        ApiResponse.success(res, teamsWithOwners, 200, "Team Details!!");
+      } else {
+        ApiResponse.error(res, "Unable to retrieve Team. Please try again", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
   static assignOwnerToTeam = async (req: Request, res: Response) => {
     try {
       const data: IAssignOwner = req.body;
@@ -177,7 +214,7 @@ export class TeamsController {
       }
       let teamResponse = await AuctionService.assignOwnerToTeam(data);
       if (teamResponse) {
-        const ownerRole = await RoleService.getUserRole(data.ownerId) as PlayerRole;
+        const ownerRole = (await RoleService.getUserRole(data.ownerId)) as PlayerRole;
         if (RoleHelper.isPlayer(ownerRole)) {
           const roleResult = await RoleService.createOwner(data.ownerId);
           if (roleResult) {
@@ -212,7 +249,7 @@ export class TeamsController {
       }
       let teamResponse = await AuctionService.removeOwnerFromTeam(data);
       if (teamResponse) {
-        const ownerRole = await RoleService.getUserRole(data.ownerId) as PlayerRole;
+        const ownerRole = (await RoleService.getUserRole(data.ownerId)) as PlayerRole;
         if (RoleHelper.isOwner(ownerRole)) {
           const roleResult = await RoleService.deleteRole(data.ownerId);
           if (roleResult) {
@@ -252,7 +289,7 @@ export class TeamsController {
         ...req.body,
         operation: "RETAIN" as IManageTeamOperation,
         requesterId: req.userId,
-        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+        isAdmin: RoleHelper.isAdminAndAbove(req.role),
       };
       return this.playerToTeamOperation(data, req.role, res);
     } catch (error) {
@@ -267,7 +304,7 @@ export class TeamsController {
         ...req.body,
         operation: "NEW" as IManageTeamOperation,
         requesterId: req.userId,
-        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+        isAdmin: RoleHelper.isAdminAndAbove(req.role),
       };
       return this.playerToTeamOperation(data, req.role, res);
     } catch (error) {
@@ -282,7 +319,22 @@ export class TeamsController {
         ...req.body,
         operation: "REMOVE" as IManageTeamOperation,
         requesterId: req.userId,
-        isAdmin: RoleHelper.isAdminAndAbove(req.role)
+        isAdmin: RoleHelper.isAdminAndAbove(req.role),
+      };
+      return this.playerToTeamOperation(data, req.role, res);
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static tempRemovePlayerFromTeam = async (req: Request, res: Response) => {
+    try {
+      const data: IManageTeam = {
+        ...req.body,
+        operation: "TRIAL_REMOVE" as IManageTeamOperation,
+        requesterId: req.userId,
+        isAdmin: RoleHelper.isAdminAndAbove(req.role),
       };
       return this.playerToTeamOperation(data, req.role, res);
     } catch (error) {
@@ -322,13 +374,12 @@ export class TeamsController {
           }
         });
 
-        ApiResponse.success(res, {}, 200, "Successfully added to Team!!");
+        ApiResponse.success(res, {}, 200, ["REMOVE", "TRIAL_REMOVE"].includes(data.operation) ? "Successfully removed from team!!!" :  "Successfully added to Team!!");
       } else {
         const teamResponse: any = {};
         if (response.isNotFound !== undefined) teamResponse.isNotFound = response.isNotFound;
         if (response.status !== undefined) teamResponse.status = response.status;
         if (response.isAccessDenied !== undefined) teamResponse.isAccessDenied = response.isAccessDenied;
-        if (response.isLive !== undefined) teamResponse.isLive = response.isLive;
         if (response.isError !== undefined) teamResponse.isError = response.isError;
         if (response.limitReached !== undefined) teamResponse.limitReached = response.limitReached;
 
@@ -363,6 +414,24 @@ export class TeamsController {
           return teamResponse.map((team) => ({
             ...team,
             imagePath: team.imageId !== null ? fileMap.get(team.imageId) || "" : "",
+          }));
+        }
+      }
+    }
+    return teamResponse;
+  };
+
+  private static updateAuctionFilePaths = async (teamResponse: AuctionTeamSummaryData[]) => {
+    if (teamResponse.length > 0) {
+      const imageIds = [...new Set(teamResponse.map((a) => a.imageId))].filter((id): id is number => id !== null);
+      if (imageIds.length > 0) {
+        const files = await fileService.getFiles(imageIds);
+        if (files) {
+          const fileMap = new Map<number, string>();
+          files.forEach((file) => fileMap.set(file.fileId, file.path));
+          return teamResponse.map((team) => ({
+            ...team,
+            image: team.imageId !== null ? fileMap.get(team.imageId) || "" : "",
           }));
         }
       }

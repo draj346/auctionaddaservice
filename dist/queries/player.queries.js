@@ -35,7 +35,7 @@ const queries = {
     },
     getPlayersByAdmin: (role, where, offset, limit, orderBy, active) => {
         return `
-      SELECT p.playerId, p.name, p.mobile, p.state, p.district,
+      SELECT p.playerId, p.name, p.mobile, p.state, p.district, p.isSubmitted,
              p.isApproved, p.isVerified, p.isNonPlayer, p.isActive, 1 as status
       FROM players p
         WHERE 1=1

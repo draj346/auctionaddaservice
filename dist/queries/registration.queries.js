@@ -2,8 +2,8 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MultiUserRegistrationQueries = exports.RegistrationQueries = void 0;
 exports.RegistrationQueries = {
-    findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ? AND name = ?`,
-    findFullMatchWithNull: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email is NULL AND name = ?`,
+    findFullMatch: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email = ?`,
+    findFullMatchWithNull: `SELECT playerId, isSubmitted FROM players WHERE mobile = ? AND email is NULL`,
     getUserByPlayerId: `SELECT name, email from players where playerId = ?`,
     findPlayerByMobile: `SELECT playerId, email, name, isSubmitted FROM players WHERE mobile = ?`,
     findPlayerByEmail: `SELECT playerId, mobile, name, isSubmitted FROM players WHERE email = ?`,

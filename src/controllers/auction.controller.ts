@@ -7,6 +7,7 @@ import {
   ICreateAuction,
   IManageAuction,
   IManageAuctionOperation,
+  IResetAuctionPlayers,
 } from "../types/auction.types";
 import { ApiResponse } from "../utils/apiResponse";
 import { RoleHelper } from "../helpers/roles.helpers";
@@ -148,6 +149,36 @@ export class AuctionController {
     }
   };
 
+  static getAuctionPlayers = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const auctionResponse = await AuctionService.getAuctionPlayers(auctionId);
+      if (auctionResponse) {
+        ApiResponse.success(res, auctionResponse, 200, "Players retrieve successfully!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again.", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static getAuctionInfo = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const auctionResponse = await AuctionService.getAuctionInfo(auctionId);
+      if (auctionResponse) {
+        ApiResponse.success(res, auctionResponse, 200, "Auctions retrieve successfully!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again.", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
   static copyAuction = async (req: Request, res: Response) => {
     try {
       const auctionId = parseInt(req.params.auctionId);
@@ -158,7 +189,12 @@ export class AuctionController {
           return ApiResponse.error(res, "Access Denied", 200, { isFreeLimitReached: true });
         }
       }
-      const auctionResponse = await AuctionService.copyAuctionById(auctionId, req.userId, isAdmin, FREE_TEAM_CREATE_LIMIT);
+      const auctionResponse = await AuctionService.copyAuctionById(
+        auctionId,
+        req.userId,
+        isAdmin,
+        FREE_TEAM_CREATE_LIMIT
+      );
       if (auctionResponse) {
         const response: any = {};
         if (auctionResponse?.status && auctionResponse.auctionId) {
@@ -402,6 +438,23 @@ export class AuctionController {
       const response = await AuctionService.unStarPlayerForAuction(data);
       if (response) {
         ApiResponse.success(res, {}, 200, "Player updated successfully!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static updatePlayerAuctionStatus = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const playerId = parseInt(req.params.playerId);
+      const status = req.params.status;
+      const response = await AuctionService.updatePlayerAuctionStatus(status.toUpperCase(), auctionId, playerId);
+      if (response) {
+        ApiResponse.success(res, {}, 200, "Player status updated successfully!!");
       } else {
         ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
       }
@@ -730,6 +783,105 @@ export class AuctionController {
         ApiResponse.success(res, auctionResponse, 200, "Auction Details!!");
       } else {
         ApiResponse.error(res, "Unable to retrieve Auction. Please try again", 200, { isNotFound: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static resetAuctionPlayers = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const data: IResetAuctionPlayers = {
+        auctionId,
+        requesterId: req.userId,
+        isAdmin: RoleHelper.isAdminAndAbove(req.role),
+      };
+      const response = await AuctionService.resetAuctionPlayers(data);
+      if (response) {
+        const statusResponse: any = {};
+        if (response.status) {
+          ApiResponse.success(res, null, 200, "Reset completed!!");
+        } else {
+          ApiResponse.error(res, "Unable to reset the auction. Please try again", 200, { ...response });
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static reauctionUnsoldPlayer = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const auctionInfo = await AuctionService.getLiveAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        if (auctionInfo.playerId !== req.userId) {
+          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+      }
+      const response = await AuctionService.reauctionUnsoldPlayer(auctionId);
+      if (response) {
+        ApiResponse.success(res, null, 200, "Successfully reset unsold player for Auction!!");
+      } else {
+        ApiResponse.error(res, "Unable to reset unsold player for Auction. Please try again", 200, { isError: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static updatePlayerOrder = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const type = req.params.type;
+      const auctionInfo = await AuctionService.getLiveAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        if (auctionInfo.playerId !== req.userId) {
+          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+      }
+      const response = await AuctionService.updatePlayerOrder(auctionId, type);
+      if (response) {
+        ApiResponse.success(res, null, 200, "Successfully updated Auction type!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static updateLiveAuctionMode = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const auctionInfo = await AuctionService.getAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (!RoleHelper.isAdminAndAbove(req.role)) {
+        if (auctionInfo.playerId !== req.userId) {
+          return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+      }
+      const response = await AuctionService.updateLiveAuctionMode(auctionId);
+      if (response) {
+        ApiResponse.success(res, null, 200, "Successfully updated Auction Mode!!");
+      } else {
+        ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
       }
     } catch (error) {
       console.log(error);

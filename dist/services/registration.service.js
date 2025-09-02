@@ -9,7 +9,7 @@ const registration_queries_1 = require("../queries/registration.queries");
 class RegistrationService {
     async initialRegistration(data) {
         const fullMatchQuery = data.email ? registration_queries_1.RegistrationQueries.findFullMatch : registration_queries_1.RegistrationQueries.findFullMatchWithNull;
-        const fullMatchData = data.email ? [data.mobile, data.email, data.name] : [data.mobile, data.name];
+        const fullMatchData = data.email ? [data.mobile, data.email] : [data.mobile];
         const [fullMatches] = await db_config_1.default.execute(fullMatchQuery, fullMatchData);
         if (fullMatches.length > 0) {
             const player = fullMatches[0];
@@ -116,7 +116,7 @@ class RegistrationService {
     }
     async createProfile(data) {
         if (data.email) {
-            const [fullMatches] = await db_config_1.default.execute(registration_queries_1.RegistrationQueries.findFullMatch, [data.mobile, data.email, data.name]);
+            const [fullMatches] = await db_config_1.default.execute(registration_queries_1.RegistrationQueries.findFullMatch, [data.mobile, data.email]);
             if (fullMatches.length > 0) {
                 return {
                     isRegistered: true,
@@ -197,7 +197,6 @@ class RegistrationService {
             const [fullMatches] = await db_config_1.default.execute(registration_queries_1.RegistrationQueries.findFullMatch, [
                 data["Mobile"],
                 data["Email"],
-                data["Full Name"],
             ]);
             if (fullMatches.length > 0) {
                 throw new Error("Mobile, Email and Name already exists");

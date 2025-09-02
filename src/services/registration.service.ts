@@ -14,7 +14,7 @@ export class RegistrationService {
   async initialRegistration(data: InitialRegistrationData): Promise<PlayerExistsSchema> {
 
     const fullMatchQuery = data.email ? RegistrationQueries.findFullMatch : RegistrationQueries.findFullMatchWithNull;
-    const fullMatchData = data.email ? [data.mobile, data.email, data.name] : [data.mobile, data.name]
+    const fullMatchData = data.email ? [data.mobile, data.email] : [data.mobile]
     const [fullMatches] = await pool.execute<RowDataPacket[]>(
       fullMatchQuery, 
       fullMatchData
@@ -146,7 +146,7 @@ export class RegistrationService {
 
   async createProfile(data: AddProfileSchemaData): Promise<PlayerExistsSchema> {
     if (data.email) {
-      const [fullMatches] = await pool.execute<RowDataPacket[]>(RegistrationQueries.findFullMatch, [data.mobile, data.email, data.name]);
+      const [fullMatches] = await pool.execute<RowDataPacket[]>(RegistrationQueries.findFullMatch, [data.mobile, data.email]);
       if (fullMatches.length > 0) {
         return {
           isRegistered: true,
@@ -248,7 +248,6 @@ export class RegistrationService {
       const [fullMatches] = await pool.execute<RowDataPacket[]>(RegistrationQueries.findFullMatch, [
         data["Mobile"],
         data["Email"],
-        data["Full Name"],
       ]);
       if (fullMatches.length > 0) {
         throw new Error("Mobile, Email and Name already exists");

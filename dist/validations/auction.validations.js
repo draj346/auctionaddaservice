@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updatePlayerToTeamSchema = exports.approveAuctionForAuctionSchema = exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToCategorySchema = exports.JoinAuctionSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.auctionTeamIdSchema = exports.auctionFileIdSchema = exports.auctionCategoryIdSchema = exports.teamIdSchema = exports.auctionCodeSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
+exports.updatePlayerToTeamSchema = exports.playerOrderSchema = exports.auctionAndPlayerIdSchema = exports.approveAuctionForAuctionSchema = exports.deleteFromWhislistSchema = exports.upsetWishlistSchema = exports.updatePlayerToCategorySchema = exports.JoinAuctionSchema = exports.updatePlayerToAuctionSchema = exports.getPlayerByCategoryIdSchema = exports.upsetCategorySchema = exports.removeOwnerFromTeamSchema = exports.assignOwnerToTeamSchema = exports.upsetTeamSchema = exports.upsetTransactionSchema = exports.updateCategorySchema = exports.auctionTeamIdSchema = exports.auctionFileIdSchema = exports.auctionCategoryIdSchema = exports.teamIdSchema = exports.auctionCodeSchema = exports.auctionSearchTextSchema = exports.auctionIdSchema = exports.upsetAuctionSchema = void 0;
 const joi_1 = __importDefault(require("joi"));
 exports.upsetAuctionSchema = joi_1.default.object({
     auctionId: joi_1.default.number().required().allow(null),
@@ -25,7 +25,7 @@ exports.upsetAuctionSchema = joi_1.default.object({
     }, "Date Validation"),
     startTime: joi_1.default.string().trim().required().allow(null, ""),
     maxPlayerPerTeam: joi_1.default.number().max(30).required(),
-    minPlayerPerTeam: joi_1.default.number().min(1).required().allow(null),
+    minPlayerPerTeam: joi_1.default.number().min(2).required().allow(null),
     pointPerTeam: joi_1.default.number().min(1).max(9999999999).required(),
     baseBid: joi_1.default.number().min(1).max(9999999).required(),
     baseIncreaseBy: joi_1.default.number().min(1).max(999999).required(),
@@ -80,7 +80,7 @@ exports.upsetTransactionSchema = joi_1.default.object({
 exports.upsetTeamSchema = joi_1.default.object({
     teamId: joi_1.default.number().required().allow(null),
     name: joi_1.default.string().trim().required(),
-    shortName: joi_1.default.string().trim().required(),
+    shortName: joi_1.default.string().max(2).trim().required(),
     shortcutKey: joi_1.default.string().max(1).trim().required(),
     image: joi_1.default.number().integer().required().allow(null),
 });
@@ -103,7 +103,7 @@ exports.upsetCategorySchema = joi_1.default.object({
     categoryId: joi_1.default.number().required().allow(null),
     name: joi_1.default.string().trim().required(),
     maxPlayer: joi_1.default.number().max(1000).required().allow(null),
-    minPlayer: joi_1.default.number().min(1).required().allow(null),
+    minPlayer: joi_1.default.number().min(2).required().allow(null),
     baseBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
     reserveBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
     highestBid: joi_1.default.number().min(1).max(999999999999).required().allow(null),
@@ -144,6 +144,15 @@ exports.deleteFromWhislistSchema = joi_1.default.object({
 exports.approveAuctionForAuctionSchema = joi_1.default.object({
     playerIds: joi_1.default.array().items(joi_1.default.number().integer().min(1).required()).min(1).required(),
     auctionId: joi_1.default.number().min(1).required(),
+});
+exports.auctionAndPlayerIdSchema = joi_1.default.object({
+    playerId: joi_1.default.number().min(1).required(),
+    auctionId: joi_1.default.number().min(1).required(),
+    status: joi_1.default.string().valid("unsold", "available").required(),
+});
+exports.playerOrderSchema = joi_1.default.object({
+    auctionId: joi_1.default.number().min(1).required(),
+    type: joi_1.default.string().valid('random', 'manual', 'sequence').required(),
 });
 exports.updatePlayerToTeamSchema = joi_1.default.object({
     auctionId: joi_1.default.number().min(1).required(),

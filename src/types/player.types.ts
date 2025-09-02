@@ -1,6 +1,6 @@
 export type PLAYER_ROLES = 'Top-order Batsman'| 'Middle-order Batsman'| 'Bowler'| 'All-rounder'| 'Lower-order Batsman'| 'Opening Batsman'| 'None';
 export type BATTING_STYLES = 'Left-hand Batsman'| 'Right-hand Batsman';
-export type BOWLING_STYLES = 'Right-arm fast'| 'Right-arm medium'| 'Left-arm fast'| 'Left-arm medium'| 'Slow left-arm orthodox'| 'Slow left-arm chinaman' | ' Right-arm Off Break'| 'Right-arm Leg Break';
+export type BOWLING_STYLES = 'Right-arm fast'| 'Right-arm medium'| 'Left-arm fast'| 'Left-arm medium'| 'Slow left-arm orthodox'| 'Slow left-arm chinaman' | ' Right-arm Off Break'| 'Right-arm Leg Break' | 'None';
 
 
 export interface Player {

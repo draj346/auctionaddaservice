@@ -32,7 +32,7 @@ exports.updateProfileSchema = joi_1.default.object({
     lowerSize: joi_1.default.string().trim().allow('', null).alphanum().optional(),
     hasCricheroesProfile: joi_1.default.boolean().allow('', null).optional(),
     isPaidPlayer: joi_1.default.boolean().allow('', null).optional(),
-    image: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
+    image: joi_1.default.number().allow('', null).min(1).optional(),
     pricePerMatch: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
     willJoinAnyOwner: joi_1.default.boolean().allow('', null).optional(),
     playerRole: joi_1.default.string().valid("Top-order Batsman", "Middle-order Batsman", 'Bowler', 'All-rounder', 'Lower-order Batsman', 'Opening Batsman', 'None').optional().allow(null),
@@ -61,12 +61,12 @@ exports.updateProfileByRoleSchema = joi_1.default.object({
     lowerSize: joi_1.default.string().trim().allow('', null).alphanum().optional(),
     hasCricheroesProfile: joi_1.default.boolean().allow('', null).optional(),
     isPaidPlayer: joi_1.default.boolean().allow('', null).optional(),
-    image: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
+    image: joi_1.default.number().allow('', null).min(1).optional(),
     pricePerMatch: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
     willJoinAnyOwner: joi_1.default.boolean().allow('', null).optional(),
     playerRole: joi_1.default.string().valid("Top-order Batsman", "Middle-order Batsman", 'Bowler', 'All-rounder', 'Lower-order Batsman', 'Opening Batsman', 'None').optional().allow(null),
     battingStyle: joi_1.default.string().valid('Left-hand Batsman', 'Right-hand Batsman').optional().allow(null),
-    bowlingStyle: joi_1.default.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman', 'Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
+    bowlingStyle: joi_1.default.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman', 'Right-arm Off Break', 'Right-arm Leg Break', 'None').optional().allow(null),
     description: joi_1.default.string().valid().max(1000).optional().allow(null)
 });
 exports.addProfileSchema = joi_1.default.object({
@@ -93,11 +93,11 @@ exports.addProfileSchema = joi_1.default.object({
     lowerSize: joi_1.default.string().trim().allow('', null).alphanum().optional(),
     hasCricheroesProfile: joi_1.default.boolean().allow('', null).optional(),
     isPaidPlayer: joi_1.default.boolean().allow('', null).optional(),
-    image: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
+    image: joi_1.default.number().allow('', null).min(1).optional(),
     pricePerMatch: joi_1.default.number().allow('', null).min(1).max(100000).optional(),
     willJoinAnyOwner: joi_1.default.boolean().allow('', null).optional(),
     playerRole: joi_1.default.string().valid("Top-order Batsman", "Middle-order Batsman", 'Bowler', 'All-rounder', 'Lower-order Batsman', 'Opening Batsman', 'None').optional().allow(null),
     battingStyle: joi_1.default.string().valid('Left-hand Batsman', 'Right-hand Batsman').optional().allow(null),
-    bowlingStyle: joi_1.default.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman', 'Right-arm Off Break', 'Right-arm Leg Break').optional().allow(null),
+    bowlingStyle: joi_1.default.string().valid('Right-arm fast', 'Right-arm medium', 'Left-arm fast', 'Left-arm medium', 'Slow left-arm orthodox', 'Slow left-arm chinaman', 'Right-arm Off Break', 'Right-arm Leg Break', 'None').optional().allow(null),
     description: joi_1.default.string().valid().max(1000).optional().allow(null)
 });

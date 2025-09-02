@@ -140,6 +140,7 @@ router.get('/auth/auctions/:auctionId/players/participants', validate(auctionVal
 router.post('/auth/auctions/team/players/retain', validate(auctionValidation.updatePlayerToTeamSchema), TeamsController.retainPlayerToTeam);
 router.post('/auth/auctions/team/players/add', validate(auctionValidation.updatePlayerToTeamSchema), TeamsController.addPlayerToTeam);
 router.delete('/auth/auctions/team/players/remove', validate(auctionValidation.updatePlayerToTeamSchema), TeamsController.removePlayerFromTeam);
+router.delete('/auth/auctions/team/players/trialRemove', validate(auctionValidation.updatePlayerToTeamSchema), TeamsController.tempRemovePlayerFromTeam);
 router.get('/auth/auctions/:auctionId/teams/:teamId/participants', validate(auctionValidation.auctionTeamIdSchema, 'params'),  validate(playerValidation.auctionPlayerPaginationSchema, "query"), PlayerController.getParticipantPlayersForTeams);
 router.get('/auth/auctions/:auctionId/teams/:teamId/players/count', validate(auctionValidation.auctionTeamIdSchema, 'params'), TeamsController.getTeamPlayerCount);
 
@@ -153,6 +154,17 @@ router.post('/auth/auctions/players/ur', CheckPermission([ROLES.SUPER_ADMIN] as 
 router.delete('/auth/auctions/players/remove', validate(auctionValidation.updatePlayerToAuctionSchema), AuctionController.removePlayerFromAuction);
 router.post('/auth/auctions/category/players/add', validate(auctionValidation.updatePlayerToCategorySchema), CategoryController.addPlayerToCategory);
 router.delete('/auth/auctions/category/players/remove', validate(auctionValidation.updatePlayerToCategorySchema), CategoryController.removePlayerFromCategory);
+
+// For real auction
+router.get('/auth/auctions/:auctionId/liveAuctionTeams', validate(auctionValidation.auctionIdSchema, 'params'), TeamsController.getTeamsByAuctionId);
+router.get('/auth/auctions/:auctionId/liveAuctionPlayers', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionPlayers);
+router.get('/auth/auctions/:auctionId/liveAuctionInfo', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.getAuctionInfo);
+router.post('/auth/auctions/:auctionId/reset', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.resetAuctionPlayers);
+router.post('/auth/auctions/:auctionId/unsold', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.reauctionUnsoldPlayer);
+router.put('/auth/auctions/:auctionId/players/:playerId/:status', validate(auctionValidation.auctionAndPlayerIdSchema, 'params'), AuctionController.updatePlayerAuctionStatus);
+router.put('/auth/auctions/:auctionId/order/:type', validate(auctionValidation.playerOrderSchema, 'params'), AuctionController.updatePlayerOrder);
+router.put('/auth/auctions/:auctionId/live', validate(auctionValidation.auctionIdSchema, 'params'), AuctionController.updateLiveAuctionMode);
+
 
 router.get('/auth/auctions/file/:fileId',validate(auctionValidation.auctionFileIdSchema, 'params'), FileController.getPaymentFilePath);
 router.get('/auth/auctions/:auctionId/teams/:teamId', validate(auctionValidation.auctionTeamIdSchema, 'params'), TeamsController.getTeamById);

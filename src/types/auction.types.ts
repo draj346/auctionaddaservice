@@ -105,6 +105,7 @@ export interface ITeamDetails {
   minPlayerPerTeam: number;
   currentPlayerCount: number;
   playerCount: number;
+  ownerName?: string;
 }
 
 export interface IAssignOwner {
@@ -120,13 +121,11 @@ export interface ITeamOwner {
   playerId: number;
 }
 
-
 export interface IRemoveOwner {
   auctionId: number;
   teamId: number;
   ownerId: number;
 }
-
 
 export type IIncrements = {
   increment: number;
@@ -158,8 +157,13 @@ export interface ICategoryDetails {
   increments: IIncrements[];
 }
 
-export type IManageAuctionOperation = "ASSIGN_AUCTION" | "ASSIGN_CATEGORY" | "REMOVE_CATEGORY" | "REMOVE_AUCTION" | "ASSIGN_SELF";
-export type IManageTeamOperation = "RETAIN" | "NEW" | "REMOVE";
+export type IManageAuctionOperation =
+  | "ASSIGN_AUCTION"
+  | "ASSIGN_CATEGORY"
+  | "REMOVE_CATEGORY"
+  | "REMOVE_AUCTION"
+  | "ASSIGN_SELF";
+export type IManageTeamOperation = "RETAIN" | "NEW" | "REMOVE" | "TRIAL_REMOVE";
 
 export interface IManageAuction {
   operation: IManageAuctionOperation;
@@ -181,9 +185,26 @@ export interface IManageTeam {
   isAdmin: boolean;
 }
 
+export interface IResetAuctionPlayers {
+  auctionId: number;
+  requesterId: number;
+  isAdmin: boolean;
+}
+
 export interface IApprovePlayerForAuction {
   auctionId: number;
   playerIds: number[];
+}
+
+export interface IUnsoldPlayerForAuction {
+  auctionId: number;
+  playerId: number;
+  status: string;
+}
+
+export interface IPlayerOrderForAuction {
+  auctionId: number;
+  type: 'random' | 'manual' | 'sequence';
 }
 
 export interface IAssignWishlist {
@@ -215,15 +236,65 @@ export interface IAuctionStoreProcedureResponse {
 }
 
 export interface IAuctionErrors {
-    isAccessDenied?: boolean;
-    isFreeLimitReached?: boolean;
-    isError?: boolean;
-    isNotFound?: boolean;
-    isValidationFailed?: boolean;
+  isAccessDenied?: boolean;
+  isFreeLimitReached?: boolean;
+  isError?: boolean;
+  isNotFound?: boolean;
+  isValidationFailed?: boolean;
 }
 
 export interface IAuctionPlayerIdWithName {
   playerId: number;
-  name: string
+  name: string;
   code: string;
 }
+
+export interface OwnerInformation {
+  name: string;
+  type: string;
+  teamId: number;
+  playerId: number;
+}
+
+export interface AuctionTeamSummaryData {
+  imageId: number;
+  image: string;
+  name: string;
+  shortName: string;
+  shortcutKey: string;
+  teamId: number;
+  owners: OwnerInformation[] | null;
+}
+
+export interface AuctionPlayer {
+  name: string;
+  battingStyle: string;
+  bowlingStyle: string;
+  playerRole: string;
+  description: string;
+  number: number;
+  points?: number;
+  image?: string;
+  team?: string;
+  status: "available" | "sold" | "unsold";
+  categoryName?: string;
+  maxBidAmout?: number;
+  playerId: number;
+  teamId?: number;
+  star: boolean;
+  baseBid?: number;
+  soldStatus?: string;
+}
+
+export type LiveAuctionProps = {
+  season: number | null;
+  paymentStatus: boolean;
+  startDate: string;
+  maxPlayerPerTeam: number;
+  isLive: boolean;
+  isCompleted: boolean;
+  pointPerTeam: number;
+  baseBid: number;
+  baseIncreaseBy: number;
+  playerOrder: string;
+};

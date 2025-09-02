@@ -11,7 +11,9 @@ import {
   IIncrements,
   IManageAuction,
   IManageTeam,
+  IPlayerOrderForAuction,
   ITransaction,
+  IUnsoldPlayerForAuction,
 } from "../types/auction.types";
 
 export const upsetAuctionSchema = Joi.object<ICreateAuction>({
@@ -35,7 +37,7 @@ export const upsetAuctionSchema = Joi.object<ICreateAuction>({
     }, "Date Validation"),
   startTime: Joi.string().trim().required().allow(null, ""),
   maxPlayerPerTeam: Joi.number().max(30).required(),
-  minPlayerPerTeam: Joi.number().min(1).required().allow(null),
+  minPlayerPerTeam: Joi.number().min(2).required().allow(null),
   pointPerTeam: Joi.number().min(1).max(9999999999).required(),
   baseBid: Joi.number().min(1).max(9999999).required(),
   baseIncreaseBy: Joi.number().min(1).max(999999).required(),
@@ -100,7 +102,7 @@ export const upsetTransactionSchema = Joi.object<ITransaction>({
 export const upsetTeamSchema = Joi.object<ICreateTeam>({
   teamId: Joi.number().required().allow(null),
   name: Joi.string().trim().required(),
-  shortName: Joi.string().trim().required(),
+  shortName: Joi.string().max(2).trim().required(),
   shortcutKey: Joi.string().max(1).trim().required(),
   image: Joi.number().integer().required().allow(null),
 });
@@ -127,7 +129,7 @@ export const upsetCategorySchema = Joi.object<ICreateCategory>({
   categoryId: Joi.number().required().allow(null),
   name: Joi.string().trim().required(),
   maxPlayer: Joi.number().max(1000).required().allow(null),
-  minPlayer: Joi.number().min(1).required().allow(null),
+  minPlayer: Joi.number().min(2).required().allow(null),
   baseBid: Joi.number().min(1).max(999999999999).required().allow(null),
   reserveBid: Joi.number().min(1).max(999999999999).required().allow(null),
   highestBid: Joi.number().min(1).max(999999999999).required().allow(null),
@@ -175,6 +177,17 @@ export const deleteFromWhislistSchema = Joi.object<IAuctionAttributesIdsSchema>(
 export const approveAuctionForAuctionSchema = Joi.object<IApprovePlayerForAuction>({
   playerIds: Joi.array().items(Joi.number().integer().min(1).required()).min(1).required(),
   auctionId: Joi.number().min(1).required(),
+});
+
+export const auctionAndPlayerIdSchema = Joi.object<IUnsoldPlayerForAuction>({
+  playerId: Joi.number().min(1).required(),
+  auctionId: Joi.number().min(1).required(),
+  status: Joi.string().valid("unsold", "available").required(),
+});
+
+export const playerOrderSchema = Joi.object<IPlayerOrderForAuction>({
+  auctionId: Joi.number().min(1).required(),
+  type: Joi.string().valid('random', 'manual', 'sequence').required(),
 });
 
 export const updatePlayerToTeamSchema = Joi.object<IManageTeam>({

@@ -47,6 +47,10 @@ class AuctionService {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionPlayerId, [auctionId]);
         return result?.length > 0 ? result[0] : null;
     }
+    static async getLiveAuctionPlayerId(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getLiveAuctionPlayerId, [auctionId]);
+        return result?.length > 0 ? result[0] : null;
+    }
     static async getAuctions(playerId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctions, [playerId]);
         return result?.length > 0 ? result : null;
@@ -104,7 +108,7 @@ class AuctionService {
             auctionId,
             playerId,
             isAdmin,
-            teamLimit
+            teamLimit,
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
@@ -141,8 +145,28 @@ class AuctionService {
         return result.affectedRows > 0;
     }
     static async getTeamsByAuctionId(auctionId) {
-        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamsByAuctionId, [auctionId]);
-        return result?.length > 0 ? result : null;
+        const [[result], [ownerResult]] = await Promise.all([
+            db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamsByAuctionId, [auctionId]),
+            db_config_1.default.execute(auction_queries_1.AuctionQueries.getFirstOwnerByAuctionId, [auctionId]),
+        ]);
+        const ownerMap = {};
+        if (ownerResult?.length > 0) {
+            const updatedOwnerResult = ownerResult;
+            updatedOwnerResult.forEach(owner => {
+                ownerMap[owner.teamId] = owner.name;
+            });
+        }
+        if (result?.length > 0) {
+            const updatedResult = result;
+            const teamsWithOwners = updatedResult.map(team => {
+                return {
+                    ...team,
+                    ownerName: ownerMap[team.teamId] || ''
+                };
+            });
+            return teamsWithOwners;
+        }
+        return null;
     }
     static async getTeamById(auctionId, teamId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamsById, [auctionId, teamId]);
@@ -226,7 +250,7 @@ class AuctionService {
             JSON.stringify(playerInfo.playerIds),
             playerInfo.baseBid || null,
             playerInfo.isApproved || false,
-            playerInfo.fileId || null
+            playerInfo.fileId || null,
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
@@ -238,7 +262,7 @@ class AuctionService {
             JSON.stringify(playerInfo.playerIds),
             playerInfo.price || null,
             playerInfo.requesterId,
-            playerInfo.isAdmin
+            playerInfo.isAdmin,
         ]);
         return result?.length > 0 ? result[0][0].result : null;
     }
@@ -304,6 +328,50 @@ class AuctionService {
     static async getMyAuctions(userId) {
         const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getMyAuctions, [userId]);
         return result?.length > 0 ? result : null;
+    }
+    static async getTeamByAuctionId(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getTeamByAuctionId, [auctionId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getOwnerByAuctionId(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getOwnerByAuctionId, [auctionId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getAuctionPlayers(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getPlayersByAuctionId, [auctionId]);
+        return result?.length > 0 ? result : null;
+    }
+    static async getAuctionInfo(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.getAuctionInfo, [auctionId]);
+        return result?.length > 0 ? result[0] : null;
+    }
+    static async updatePlayerAuctionStatus(status, auctionId, playerId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updatePlayerStatus, [
+            status,
+            auctionId,
+            playerId,
+        ]);
+        return result.affectedRows > 0;
+    }
+    static async resetAuctionPlayers(auctionInfo) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.resetAuctionPlayers, [
+            auctionInfo.auctionId,
+            auctionInfo.requesterId,
+            auctionInfo.isAdmin,
+        ]);
+        return result?.length > 0 ? result[0][0].result : null;
+    }
+    static async reauctionUnsoldPlayer(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.reauctionUnsoldPlayer, [auctionId]);
+        return result.affectedRows > 0;
+    }
+    static async updatePlayerOrder(auctionId, orderType) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updatePlayerOrder, [orderType.toUpperCase(), auctionId]);
+        return result.affectedRows > 0;
+    }
+    static async updateLiveAuctionMode(auctionId) {
+        const [result] = await db_config_1.default.execute(auction_queries_1.AuctionQueries.updateAuctionMode, [auctionId]);
+        return result.affectedRows > 0;
     }
 }
 exports.AuctionService = AuctionService;

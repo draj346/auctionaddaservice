@@ -1,7 +1,7 @@
 DELIMITER $$
 
 CREATE PROCEDURE ManageTeamPlayers(
-    IN p_operation ENUM('RETAIN', 'NEW', 'REMOVE'),
+    IN p_operation ENUM('RETAIN', 'NEW', 'REMOVE', 'TRIAL_REMOVE'),
     IN p_auction_id INT,
     IN p_team_id INT,
     IN p_player_ids JSON,
@@ -17,11 +17,12 @@ BEGIN
     DECLARE v_current_player_count INT DEFAULT 0;
     DECLARE v_new_player_count INT DEFAULT 0;
     DECLARE v_in_transaction BOOLEAN DEFAULT FALSE;
-    DECLARE v_auction_live_flag BOOLEAN DEFAULT FALSE;
     DECLARE v_not_found BOOLEAN DEFAULT FALSE;
     DECLARE v_success BOOLEAN DEFAULT TRUE;
     DECLARE v_access_denied BOOLEAN DEFAULT FALSE;
     DECLARE v_limit_reached BOOLEAN DEFAULT FALSE;
+    DECLARE v_update_count INT DEFAULT 0;
+    DECLARE v_delete_count INT DEFAULT 0;
 
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
@@ -42,9 +43,6 @@ BEGIN
         SET v_success = FALSE;
     ELSEIF (!p_admin AND v_auction_owner_id != p_requesterId) THEN
         SET v_access_denied = TRUE;
-        SET v_success = FALSE;
-    ELSEIF v_auction_live THEN
-        SET v_auction_live_flag = TRUE;
         SET v_success = FALSE;
     END IF;
 
@@ -114,6 +112,17 @@ BEGIN
                 END IF;
 
             WHEN p_operation = 'REMOVE' THEN 
+                UPDATE auction_category_player 
+                SET status = 'AVAILABLE'
+                WHERE auctionId = p_auction_id
+                AND playerId IN (
+                    SELECT player_id
+                    FROM JSON_TABLE(
+                        p_player_ids,
+                        '$[*]' COLUMNS(player_id INT PATH '$')
+                    ) AS jt
+                );
+
                 DELETE FROM auction_team_player
                 WHERE auctionId = p_auction_id
                 AND teamId = p_team_id
@@ -126,6 +135,51 @@ BEGIN
                 );
                 
                 IF ROW_COUNT() = 0 AND JSON_LENGTH(p_player_ids) > 0 THEN
+                    SET v_success = FALSE;
+                END IF;
+
+            WHEN p_operation = 'TRIAL_REMOVE' THEN
+                UPDATE auction_category_player 
+                SET status = 'AVAILABLE'
+                WHERE auctionId = p_auction_id
+                AND playerId IN (
+                    SELECT player_id
+                    FROM JSON_TABLE(
+                        p_player_ids,
+                        '$[*]' COLUMNS(player_id INT PATH '$')
+                    ) AS jt
+                );
+
+                UPDATE auction_team_player
+                SET isActive = false
+                WHERE auctionId = p_auction_id
+                AND teamId = p_team_id
+                AND status = 'RETAIN'
+                AND playerId IN (
+                    SELECT player_id
+                    FROM JSON_TABLE(
+                        p_player_ids,
+                        '$[*]' COLUMNS(player_id INT PATH '$')
+                    ) AS jt
+                );
+                
+                SET v_update_count = ROW_COUNT();
+
+                DELETE FROM auction_team_player
+                WHERE auctionId = p_auction_id
+                AND teamId = p_team_id
+                AND status != 'RETAIN'
+                AND playerId IN (
+                    SELECT player_id
+                    FROM JSON_TABLE(
+                        p_player_ids,
+                        '$[*]' COLUMNS(player_id INT PATH '$')
+                    ) AS jt
+                );
+                
+                SET v_delete_count = ROW_COUNT();
+
+                IF (v_update_count + v_delete_count) = 0 AND JSON_LENGTH(p_player_ids) > 0 THEN
                     SET v_success = FALSE;
                 END IF;
         END CASE;
@@ -150,8 +204,6 @@ BEGIN
             SELECT JSON_OBJECT('status', FALSE, 'limitReached', TRUE) AS result;
         ELSEIF v_access_denied THEN
             SELECT JSON_OBJECT('status', FALSE, 'isAccessDenied', TRUE) AS result;
-        ELSEIF v_auction_live_flag THEN
-            SELECT JSON_OBJECT('status', FALSE, 'isLive', TRUE) AS result;
         ELSEIF v_not_found THEN
             SELECT JSON_OBJECT('status', FALSE, 'isNotFound', TRUE) AS result;
         ELSE

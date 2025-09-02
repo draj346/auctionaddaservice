@@ -1,6 +1,8 @@
 import { ResultSetHeader, RowDataPacket } from "mysql2";
 import pool from "../config/db.config";
 import {
+  AuctionPlayer,
+  AuctionTeamSummaryData,
   IApprovePlayerForAuction,
   IAssignOwner,
   IAssignWishlist,
@@ -17,9 +19,12 @@ import {
   IManageTeam,
   IMyAuctions,
   IRemoveOwner,
+  IResetAuctionPlayers,
   ITeamDetails,
   ITeamOwner,
   ITransaction,
+  LiveAuctionProps,
+  OwnerInformation,
 } from "../types/auction.types";
 import { AuctionQueries, MultiUserAuctionQueries } from "../queries/auction.queries";
 import { FREE_AUCTION_CREATE_LIMIT } from "../config/env";
@@ -72,6 +77,11 @@ export class AuctionService {
     return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
   }
 
+  public static async getLiveAuctionPlayerId(auctionId: number): Promise<IAuctionPlayerIdWithName | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getLiveAuctionPlayerId, [auctionId]);
+    return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
+  }
+
   public static async getAuctions(playerId: number): Promise<IAuctionDetails[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctions, [playerId]);
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;
@@ -82,7 +92,7 @@ export class AuctionService {
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;
   }
 
-   public static async getLiveAuctions(): Promise<IAuctionDetails[] | null> {
+  public static async getLiveAuctions(): Promise<IAuctionDetails[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getLiveAuctions);
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;
   }
@@ -147,13 +157,13 @@ export class AuctionService {
     auctionId: number,
     playerId: number,
     isAdmin: boolean,
-    teamLimit: number,
+    teamLimit: number
   ): Promise<IAuctionStoreProcedureResponse | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.copyAuctionById, [
       auctionId,
       playerId,
       isAdmin,
-      teamLimit
+      teamLimit,
     ]);
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
@@ -198,8 +208,31 @@ export class AuctionService {
   }
 
   public static async getTeamsByAuctionId(auctionId: number): Promise<ITeamDetails[] | null> {
-    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getTeamsByAuctionId, [auctionId]);
-    return result?.length > 0 ? (result as ITeamDetails[]) : null;
+    const [[result], [ownerResult]] = await Promise.all([
+      pool.execute<RowDataPacket[]>(AuctionQueries.getTeamsByAuctionId, [auctionId]),
+      pool.execute<RowDataPacket[]>(AuctionQueries.getFirstOwnerByAuctionId, [auctionId]),
+    ]);
+    
+    const ownerMap: Record<number, string> = {};
+    if (ownerResult?.length > 0 ) {
+      const updatedOwnerResult = ownerResult as { name: string; teamId: number }[];
+      updatedOwnerResult.forEach(owner => {
+        ownerMap[owner.teamId] = owner.name;
+      });
+    }
+
+    if (result?.length > 0) {
+      const updatedResult = result as ITeamDetails[];
+      const teamsWithOwners = updatedResult.map(team => {
+      return {
+        ...team,
+        ownerName: ownerMap[team.teamId] || ''
+      };
+    });
+    return teamsWithOwners;
+    }
+
+    return null;
   }
 
   public static async getTeamById(auctionId: number, teamId: number): Promise<ITeamDetails | null> {
@@ -310,14 +343,12 @@ export class AuctionService {
       JSON.stringify(playerInfo.playerIds),
       playerInfo.baseBid || null,
       playerInfo.isApproved || false,
-      playerInfo.fileId || null
+      playerInfo.fileId || null,
     ]);
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
 
-  public static async updatePlayerToTeam(
-    playerInfo: IManageTeam
-  ): Promise<IAuctionStoreProcedureResponse | null> {
+  public static async updatePlayerToTeam(playerInfo: IManageTeam): Promise<IAuctionStoreProcedureResponse | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.updatePlayerToTeam, [
       playerInfo.operation,
       playerInfo.auctionId,
@@ -325,11 +356,10 @@ export class AuctionService {
       JSON.stringify(playerInfo.playerIds),
       playerInfo.price || null,
       playerInfo.requesterId,
-      playerInfo.isAdmin
+      playerInfo.isAdmin,
     ]);
     return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
   }
-
 
   public static async upsetWishlist(wishlist: IAssignWishlist): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.upsetWishlist, [
@@ -414,5 +444,62 @@ export class AuctionService {
   public static async getMyAuctions(userId: number): Promise<IMyAuctions[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getMyAuctions, [userId]);
     return result?.length > 0 ? (result as IMyAuctions[]) : null;
+  }
+
+  public static async getTeamByAuctionId(auctionId: number): Promise<AuctionTeamSummaryData[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getTeamByAuctionId, [auctionId]);
+    return result?.length > 0 ? (result as AuctionTeamSummaryData[]) : null;
+  }
+
+  public static async getOwnerByAuctionId(auctionId: number): Promise<OwnerInformation[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getOwnerByAuctionId, [auctionId]);
+    return result?.length > 0 ? (result as OwnerInformation[]) : null;
+  }
+
+  public static async getAuctionPlayers(auctionId: number): Promise<AuctionPlayer[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getPlayersByAuctionId, [auctionId]);
+    return result?.length > 0 ? (result as AuctionPlayer[]) : null;
+  }
+
+  public static async getAuctionInfo(auctionId: number): Promise<LiveAuctionProps | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctionInfo, [auctionId]);
+    return result?.length > 0 ? (result[0] as LiveAuctionProps) : null;
+  }
+
+  public static async updatePlayerAuctionStatus(status: string, auctionId: number, playerId: number): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updatePlayerStatus, [
+      status,
+      auctionId,
+      playerId,
+    ]);
+
+    return result.affectedRows > 0;
+  }
+
+  public static async resetAuctionPlayers(
+    auctionInfo: IResetAuctionPlayers
+  ): Promise<IAuctionStoreProcedureResponse | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.resetAuctionPlayers, [
+      auctionInfo.auctionId,
+      auctionInfo.requesterId,
+      auctionInfo.isAdmin,
+    ]);
+    return result?.length > 0 ? (result[0][0].result as IAuctionStoreProcedureResponse) : null;
+  }
+
+  public static async reauctionUnsoldPlayer(auctionId: number): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.reauctionUnsoldPlayer, [auctionId]);
+
+    return result.affectedRows > 0;
+  }
+
+  public static async updatePlayerOrder(auctionId: number, orderType: string): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updatePlayerOrder, [orderType.toUpperCase(), auctionId]);
+    return result.affectedRows > 0;
+  }
+
+  public static async updateLiveAuctionMode(auctionId: number): Promise<boolean> {
+    const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updateAuctionMode, [auctionId]);
+    return result.affectedRows > 0;
   }
 }
