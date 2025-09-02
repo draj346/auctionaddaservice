@@ -201,7 +201,9 @@ export const AuctionQueries = {
                   WHERE acp.playerId =?`,
   getAuctionStatusForJoin: `SELECT isApproved from auction_category_player acp WHERE acp.playerId = ? AND acp.auctionId = ?`,
   getTeamByAuctionId: `select teamId, name, shortName, shortcutKey, image as imageId from teams where auctionId = ?`,
+  getTeamByTeamId: `select teamId, name, shortName, shortcutKey, image as imageId from teams where auctionId = ? and teamId = ?`,
   getOwnerByAuctionId: `SELECT t.tag as type, p.name, t.teamId, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.auctionId = ?`,
+  getOwnerByTeamId: `SELECT t.tag as type, p.name, p.email, p.mobile, t.teamId, p.playerId from team_owner t join players p on p.playerId = t.ownerId where t.teamId = ?`,
   getFirstOwnerByAuctionId: `SELECT 
                               to1.teamId,
                               p.name
@@ -247,6 +249,26 @@ export const AuctionQueries = {
                         AND acp.isApproved = TRUE
                         ORDER BY p.playerId;
   `,
+  getPlayersByTeamId: `
+                        SELECT 
+                          ROW_NUMBER() OVER (ORDER BY p.playerId) as number,
+                          p.name,
+                          p.email,
+                          p.mobile,
+                          LOWER(acp.status) as status,
+                          p.playerId,
+                          acp.baseBid,
+                          atp.price as points,
+                          atp.status as soldStatus
+                        FROM auction_category_player acp
+                        INNER JOIN players p ON acp.playerId = p.playerId
+                        LEFT JOIN auction_team_player atp ON acp.playerId = atp.playerId AND acp.auctionId = atp.auctionId AND atp.isActive = TRUE
+                        LEFT JOIN teams t ON atp.teamId = t.teamId AND t.auctionId = acp.auctionId
+                        WHERE acp.auctionId = ?
+                        AND t.teamId = ?
+                        AND acp.isApproved = TRUE
+                        ORDER BY p.playerId;
+  `,
   getAuctionInfo: `SELECT 
                       season, 
                       paymentStatus, 
@@ -262,7 +284,9 @@ export const AuctionQueries = {
                       pointPerTeam, 
                       baseBid, 
                       baseIncreaseBy, 
-                      LOWER(players_selection_rule) AS playerOrder 
+                      LOWER(players_selection_rule) AS playerOrder,
+                      imageId,
+                      name
                   FROM auctions 
                   WHERE auctionId = ?`,
   updatePlayerStatus: `update auction_category_player set status = ? where auctionId = ? and playerId = ?`,
@@ -272,6 +296,15 @@ export const AuctionQueries = {
         AND acp.status = 'UNSOLD'`,
   updatePlayerOrder: `UPDATE auctions set players_selection_rule = ? WHERE auctionId = ?`,
   updateAuctionMode: `UPDATE auctions set isLive = True WHERE auctionId = ? and paymentStatus is True and isActive is True;`,
+  checkOwnerAccess: `SELECT EXISTS (
+                  SELECT 1
+                  FROM team_owner to1
+                  INNER JOIN teams t ON to1.teamId = t.teamId
+                  WHERE 
+                      to1.auctionId = 1020
+                      AND to1.ownerId = 12048
+                      AND t.isActive = true
+              ) AS isOwner;`
 };
 
 export const MultiUserAuctionQueries = {

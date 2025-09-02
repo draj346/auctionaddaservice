@@ -621,6 +621,26 @@ export const publicPlayerQueries = {
         )
         AND p.name LIKE CONCAT('%', ?, '%')
       LIMIT 100`,
+getAuctionParticipants: `SELECT 
+                              p.name as "Player Name",
+                              p.mobile as "Mobile Number",
+                              p.email as "Email Address",
+                              pi.playerRole as "Player Role",
+                              pi.battingStyle as "Batting Style",
+                              pi.bowlingStyle as "Bowling Style",
+                              p.state as "State",
+                              p.district as "District",
+                              CASE 
+                                WHEN p.isApproved THEN 'True'
+                                ELSE 'False'
+                              END AS "Profile Approved",
+                              COALESCE(acp.baseBid, a.baseBid) as "Base Bid"
+                          FROM auction_category_player acp
+                          FORCE INDEX (idx_auction_player)
+                          INNER JOIN players p ON acp.playerId = p.playerId
+                          INNER JOIN auctions a ON acp.auctionId = a.auctionId
+                          LEFT JOIN player_informations pi ON p.playerId = pi.playerId 
+                          WHERE acp.auctionId = ?;`,
 };
 
 export class PlayerQueries {

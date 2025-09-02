@@ -114,6 +114,13 @@ export class PlayerService {
     };
   }
 
+  async getAuctionParticipants(
+    auctionId: number
+  ): Promise<Player[]> {
+    const [result] = await pool.execute<RowDataPacket[]>(publicPlayerQueries.getAuctionParticipants, [auctionId]);
+    return result.length > 0 ? (result as Player[]) : [];
+  }
+
   async getAddedPlayersForAuction(
     userId: number,
     page: number = 1,

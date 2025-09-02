@@ -140,3 +140,7 @@ export interface AuctionPlayerPaginationSchema {
   search: string;
   auctionId: number;
 }
+
+export interface RejectionNotesSchema {
+  notes: string;
+}

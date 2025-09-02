@@ -2,12 +2,15 @@ import { Request, Response } from "express";
 import { PlayerService } from "../services/player.service";
 import { ApiResponse } from "../utils/apiResponse";
 import * as XLSX from "xlsx";
-import { AuctionPlayerPaginationSchema, OwnerPaginationSchema, PlayerIdsSchema, PlayerPaginationSchema } from "../types/player.types";
+import { AuctionPlayerPaginationSchema, OwnerPaginationSchema, PlayerIdsSchema, PlayerPaginationSchema, RejectionNotesSchema } from "../types/player.types";
 import { RoleService } from "../services/role.service";
 import { RoleHelper } from "../helpers/roles.helpers";
 import { AuctionService } from "../services/auction.service";
+import { sendProfileRejectionEmail } from "../utils/sendMail";
+import { RegistrationService } from "../services/registration.service";
 
 const playerService = new PlayerService();
+const registrationService = new RegistrationService();
 
 export class PlayerController {
   static getPlayers = async (req: Request, res: Response) => {
@@ -81,6 +84,27 @@ export class PlayerController {
       }
       if (player) {
         ApiResponse.success(res, player, 200, "Players retrieved successfully");
+      } else {
+        return ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
+          isAccessDenied: true,
+        });
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, {
+        isError: true,
+      });
+    }
+  };
+
+   static rejectPlayer = async (req: Request, res: Response) => {
+    try {
+      const playerId = parseInt(req.params.playerId);
+      const body: RejectionNotesSchema = req.body;
+      const playerInfo = await registrationService.getPlayerEmailById(playerId);
+      if (playerInfo && playerInfo.email) {
+        await sendProfileRejectionEmail(playerInfo.email, playerInfo.name || "", body.notes || "") 
+        ApiResponse.success(res, {}, 200, "Rejection mail send successfully");
       } else {
         return ApiResponse.error(res, "Player not found or not eligible to view the profile", 404, {
           isAccessDenied: true,
@@ -342,4 +366,40 @@ export class PlayerController {
        ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
     }
   };
+
+   static exportAuctionParticipants = async (req: Request, res: Response): Promise<void> => {
+      const sendExcel = (data: string | any[][], status: number, filename: string, sheetName: string = "Status") => {
+        const ws = XLSX.utils.aoa_to_sheet(typeof data === "string" ? [[data]] : data);
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, sheetName);
+        const buffer = XLSX.write(wb, { type: "buffer", bookType: "xlsx" });
+  
+        res.setHeader("Content-Disposition", `attachment; filename=${filename}`);
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+        res.status(status).send(buffer);
+      };
+      try {
+        const auctionId = parseInt(req.params.auctionId);
+
+         if (RoleHelper.isPlayer(req.role)) {
+            return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+        }
+  
+        const players = await playerService.getAuctionParticipants(auctionId);
+  
+        if (players.length === 0) {
+          return sendExcel("No player joined the auction", 200, "no_participants.xlsx");
+        }
+  
+        const allKeys = Object.keys(players[0]);
+  
+        const headers = allKeys.map((key) => key.replace(/_/g, " ").toUpperCase());
+        const rows = players.map((player) => allKeys.map((key) => player[key as keyof typeof player] ?? null));
+  
+        return sendExcel([headers, ...rows], 200, `players_export_${Date.now()}.xlsx`, "Auction Participants Data");
+      } catch (error) {
+        console.error("Export error:", error);
+        sendExcel("Internal server error. Please try again later.", 500, "server_error.xlsx", "Error");
+      }
+    };
 }

@@ -1,5 +1,5 @@
 import Joi from "joi";
-import { AuctionPlayerPaginationSchema, OwnerPaginationSchema, PlayerPaginationSchema } from "../types/player.types";
+import { AuctionPlayerPaginationSchema, OwnerPaginationSchema, PlayerPaginationSchema, RejectionNotesSchema } from "../types/player.types";
 
 export const playerPaginationSchema = Joi.object<PlayerPaginationSchema>({
   page: Joi.number().required().min(1),
@@ -21,4 +21,8 @@ export const ownerPaginationSchema = Joi.object<OwnerPaginationSchema>({
 export const auctionPlayerPaginationSchema = Joi.object<AuctionPlayerPaginationSchema>({
   page: Joi.number().required().min(1),
   search: Joi.string().trim().allow('').pattern(/^[a-zA-Z0-9\s]*$/).required(),
+});
+
+export const rejectionNotesSchema = Joi.object<RejectionNotesSchema>({
+  notes: Joi.string().trim().required().allow(null, ""),
 });

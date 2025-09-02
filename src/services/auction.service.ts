@@ -451,13 +451,28 @@ export class AuctionService {
     return result?.length > 0 ? (result as AuctionTeamSummaryData[]) : null;
   }
 
+  public static async getTeamByTeamId(auctionId: number, teamId: number): Promise<AuctionTeamSummaryData | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getTeamByTeamId, [auctionId, teamId]);
+    return result?.length > 0 ? (result[0] as AuctionTeamSummaryData) : null;
+  }
+
   public static async getOwnerByAuctionId(auctionId: number): Promise<OwnerInformation[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getOwnerByAuctionId, [auctionId]);
     return result?.length > 0 ? (result as OwnerInformation[]) : null;
   }
 
+  public static async getOwnerByTeamId(teamId: number): Promise<OwnerInformation[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getOwnerByTeamId, [teamId]);
+    return result?.length > 0 ? (result as OwnerInformation[]) : null;
+  }
+
   public static async getAuctionPlayers(auctionId: number): Promise<AuctionPlayer[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getPlayersByAuctionId, [auctionId]);
+    return result?.length > 0 ? (result as AuctionPlayer[]) : null;
+  }
+
+  public static async getAuctionTeamPlayers(auctionId: number, teamId: number): Promise<AuctionPlayer[] | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getPlayersByTeamId, [auctionId, teamId]);
     return result?.length > 0 ? (result as AuctionPlayer[]) : null;
   }
 
@@ -501,5 +516,10 @@ export class AuctionService {
   public static async updateLiveAuctionMode(auctionId: number): Promise<boolean> {
     const [result] = await pool.execute<ResultSetHeader>(AuctionQueries.updateAuctionMode, [auctionId]);
     return result.affectedRows > 0;
+  }
+
+  public static async isOwnerByAuctionId(auctionId: number, userId: number): Promise<boolean> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.checkOwnerAccess, [auctionId, userId]);
+    return result?.length > 0 ? (result[0].isOwner === 1) : false
   }
 }

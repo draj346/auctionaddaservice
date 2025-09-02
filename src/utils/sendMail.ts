@@ -1,12 +1,21 @@
 import * as nodemailer from "nodemailer";
 import { EMAIL_FROM, EMAIL_PASSWORD, OTP_EXPIRY_MINUTES } from "../config/env";
 import { SentMessageInfo } from "nodemailer";
+import path from 'path';
+import fs from 'fs';
+
+interface Attachement {
+  filename: string;
+  path: string;
+  contentType: string;
+}
 
 interface EmailOptions {
   to: string | string[];
   subject: string;
   html: string;
   from?: string;
+  attachments?: Attachement[];
 }
 
 interface OtpEmailOptions {
@@ -14,8 +23,6 @@ interface OtpEmailOptions {
   to: string | string[];
   otp: string;
 }
-
-
 
 const transport = nodemailer.createTransport({
   host: "smtpout.secureserver.net",
@@ -35,6 +42,7 @@ export const sendMail = async ({
   subject = "Email Alert from Auction Adda",
   html,
   from = `Auction Adda ${EMAIL_FROM}`,
+  attachments = []
 }: EmailOptions): Promise<nodemailer.SentMessageInfo> => {
   try {
     const info = await transport.sendMail({
@@ -42,6 +50,7 @@ export const sendMail = async ({
       to,
       subject,
       html,
+      attachments
     });
     return info;
   } catch (error) {
@@ -119,5 +128,81 @@ export const sendRegistrationEmail = async (to: string | string[], name: string)
     to,
     subject,
     html,
+  });
+};
+
+
+export const sendProfileRejectionEmail = async (
+  to: string,
+  name: string,
+  notes?: string
+): Promise<SentMessageInfo> => {
+  const subject = "Action Required: Complete Your AuctionAdda Profile";
+  
+  const notesSection = notes ? `
+    <div style="background-color: #f8f9fa; padding: 15px; border-left: 4px solid #6c757d; margin: 20px 0;">
+      <p><strong>Additional Notes:</strong></p>
+      <p>${notes}</p>
+    </div>
+  ` : '';
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background-color: #f9f9f9; padding: 20px;">
+      <div style="background: linear-gradient(to right, #FF7A00, #e06d00); padding: 20px; text-align: center; border-radius: 5px 5px 0 0;">
+        <h1 style="color: white; margin: 0;">Profile Update Required</h1>
+      </div>
+      
+      <div style="background-color: white; padding: 25px; border-radius: 0 0 5px 5px;">
+        <p>Dear ${name ? name : "Member"},</p>
+        
+        <p>We noticed that you have registered on Auction Adda, but your profile picture and details are not yet updated. To ensure smooth participation and proper visibility in the portal, please upload a clear picture and complete your profile.</p>
+        
+        ${notesSection}
+        
+        <div style="background-color: #fff5eb; padding: 15px; border-left: 4px solid #FF7A00; margin: 20px 0;">
+          <p><strong>How to Upload Your Picture and Update Details:</strong></p>
+          <ol style="margin: 0; padding-left: 20px;">
+            <li>Log in to your Auction Adda account.</li>
+            <li>On the left sidebar, click the 3rd icon – Players tab.</li>
+            <li>Select "View All".</li>
+            <li>Find your name at the top and click Edit.</li>
+            <li>Upload a clear profile picture and update the remaining details.</li>
+            <li>Save changes. ✅</li>
+          </ol>
+        </div>
+        
+        <p>Completing your profile will help us verify and display your information correctly during the tournament.</p>
+        
+        <p>Best Regards,<br>
+        <strong>Auction Adda Team</strong></p>
+      </div>
+      
+      <div style="text-align: center; padding: 20px; color: #777; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} AuctionAdda. All rights reserved.</p>
+        <p>You're receiving this email because you registered on AuctionAdda.com</p>
+      </div>
+    </div>
+  `;
+
+  const pdfPath = path.join(process.cwd(), 'public', 'guide', 'Auction Adda Profile Update Guide.pdf');
+  
+  let attachments:Attachement[] = [];
+  if (fs.existsSync(pdfPath)) {
+    attachments = [
+      {
+        filename: 'Auction Adda Profile Update Guide.pdf',
+        path: pdfPath,
+        contentType: 'application/pdf'
+      }
+    ];
+  } else {
+    console.warn('PDF file not found at path:', pdfPath);
+  }
+
+  return sendMail({
+    to,
+    subject,
+    html,
+    attachments
   });
 };

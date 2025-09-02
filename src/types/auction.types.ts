@@ -254,6 +254,8 @@ export interface OwnerInformation {
   type: string;
   teamId: number;
   playerId: number;
+  mobile?: string;
+  email?: string;
 }
 
 export interface AuctionTeamSummaryData {
@@ -284,6 +286,8 @@ export interface AuctionPlayer {
   star: boolean;
   baseBid?: number;
   soldStatus?: string;
+  mobile?: string;
+  email?: string;
 }
 
 export type LiveAuctionProps = {
@@ -297,4 +301,15 @@ export type LiveAuctionProps = {
   baseBid: number;
   baseIncreaseBy: number;
   playerOrder: string;
+  imageId: number | null;
+  image: string;
+  name: string;
 };
+
+export interface GenerateTeamPDFProps {
+  team: AuctionTeamSummaryData;
+  teamPlayers: AuctionPlayer[];
+  auction: LiveAuctionProps;
+  auctionImagePath: string;
+  siteLogoPath: string;
+}

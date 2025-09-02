@@ -1,7 +1,6 @@
 import express from "express";
 import { PORT } from "./config/env";
 import router from "./routes";
-import bodyParser from 'body-parser';
 import cors from 'cors';
 import { notFoundHandler } from "./controllers/notfound.controller";
 
@@ -15,6 +14,7 @@ const corsOptions = {
   ],
   methods: ['GET', 'POST', 'DELETE', 'PUT'],
   allowedHeaders: ['Content-Type', 'Authorization'],
+  exposedHeaders: ["Content-Disposition"],
   credentials: true,
 };
 

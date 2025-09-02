@@ -31,4 +31,5 @@ export interface ExcelFileData {
 export interface FilePathSchema {
   path: string;
   fileId: number;
+  name: string;
 }

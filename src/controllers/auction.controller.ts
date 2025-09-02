@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { AuctionService } from "../services/auction.service";
 import {
+  AuctionPlayer,
+  AuctionTeamSummaryData,
+  GenerateTeamPDFProps,
   IApprovePlayerForAuction,
   IAuctionAttributesIdsSchema,
   IAuctionDetails,
@@ -15,10 +18,14 @@ import { NotificationService } from "../services/notification.service";
 import { NotificationMessage, NOTIFICATIONS, NotificationType } from "../constants/notification.constants";
 import { AuctionsHelper } from "../helpers/auctions.helpers";
 import { FileService } from "../services/file.service";
-import { DuplicateFile, toMySQLDate } from "../utils/common";
+import { DuplicateFile, getFormattedAmount, toMySQLDate } from "../utils/common";
 import { RoleService } from "../services/role.service";
 import { ROLES } from "../constants/roles.constants";
 import { FILE_UPLOAD_FOLDER, FREE_TEAM_CREATE_LIMIT } from "../config/env";
+import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
+import generateTeamPDF from "../utils/generatePdf";
 
 const fileService = new FileService();
 
@@ -883,6 +890,91 @@ export class AuctionController {
       } else {
         ApiResponse.error(res, "Something went happen. Please try again", 200, { isError: true });
       }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static generateAuctionReportByTeam = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const teamId = parseInt(req.params.teamId);
+      if (RoleHelper.isPlayer(req.role)) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+      const auction = await AuctionService.getAuctionInfo(auctionId);
+      let flag = false;
+      if (auction) {
+        let teamResponse = await AuctionService.getTeamByTeamId(auctionId, teamId);
+        let teamOwnerResponse = await AuctionService.getOwnerByTeamId(teamId);
+        if (teamResponse) {
+          const teamOwners =
+            teamOwnerResponse?.map((owner) => ({
+              name: owner.name,
+              type: owner.type,
+              playerId: owner.playerId,
+              email: owner.email,
+              mobile: owner.mobile,
+            })) || [];
+
+          const team = {
+            image: "",
+            name: teamResponse.name,
+            shortName: teamResponse.shortName,
+            shortcutKey: teamResponse.shortcutKey,
+            teamId: teamResponse.teamId,
+            owners: teamOwners,
+          } as AuctionTeamSummaryData;
+
+          const teamPlayers = await AuctionService.getAuctionTeamPlayers(auctionId, teamId);
+
+          let auctionImagePath = "";
+          if (auction.imageId) {
+            const files = await fileService.getFiles([auction.imageId]);
+            if (files?.length === 1) {
+              auctionImagePath = path.join(process.cwd(), 'public', 'uploads', files[0].name);
+            }
+          }
+          const siteLogoPath = path.join(process.cwd(), 'public', 'icons', "logo.png");
+          if (teamPlayers) {
+            generateTeamPDF({
+              team,
+              teamPlayers,
+              auction,
+              auctionImagePath,
+              siteLogoPath,
+              res,
+            });
+            flag = true;
+          }
+        }
+      }
+    } catch (error) {
+      console.log(error);
+      ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });
+    }
+  };
+
+  static isValidToStartAuction = async (req: Request, res: Response) => {
+    try {
+      const auctionId = parseInt(req.params.auctionId);
+      const auctionInfo = await AuctionService.getLiveAuctionPlayerId(auctionId);
+      if (!auctionInfo) {
+        return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
+      }
+
+      if (RoleHelper.isAdminAndAbove(req.role) || auctionInfo.playerId === req.userId) {
+          ApiResponse.success(res, {count: 1}, 200, "verified successfully!!");
+      }
+
+      const isOwner = await AuctionService.isOwnerByAuctionId(auctionId, req.userId);
+
+      if (isOwner) {
+          ApiResponse.success(res, {count: 2}, 200, "verified successfully!!");
+      }
+
+       ApiResponse.success(res, {count: 3}, 200, "verified successfully!!");
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });

@@ -10,5 +10,5 @@ export const FileQueries = {
 };
 
 export const FileQueririesFn = {
-  getFilesByIds: (fileIds: number[]) => `SELECT fileId, url as path FROM files WHERE fileId IN (${fileIds.join(",")})`,
+  getFilesByIds: (fileIds: number[]) => `SELECT fileId, url as path, name FROM files WHERE fileId IN (${fileIds.join(",")})`,
 }

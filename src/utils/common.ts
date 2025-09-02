@@ -97,3 +97,14 @@ export async function DuplicateFile(originalFilePath: string): Promise<{name: st
     await fs.copyFile(originalFilePath, newFilePath);
     return {name: newFilename, path: newFilePath};
 }
+
+export const getFormattedAmount = (bidAmount: number): string => {
+  if (!bidAmount) return "";
+  if (bidAmount >= 10000000) {
+    return (bidAmount / 10000000).toFixed(2) + "Cr";
+  } else if (bidAmount >= 100000) {
+    return (bidAmount / 100000).toFixed(2) + "L";
+  } else {
+    return new Intl.NumberFormat("en-IN").format(bidAmount);
+  }
+};
