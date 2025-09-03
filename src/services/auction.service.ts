@@ -82,6 +82,11 @@ export class AuctionService {
     return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
   }
 
+  public static async isLiveAuctionAccess(auctionId: number): Promise<IAuctionPlayerIdWithName | null> {
+    const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.isAuctionAccess, [auctionId]);
+    return result?.length > 0 ? (result[0] as IAuctionPlayerIdWithName) : null;
+  }
+
   public static async getAuctions(playerId: number): Promise<IAuctionDetails[] | null> {
     const [result] = await pool.execute<RowDataPacket[]>(AuctionQueries.getAuctions, [playerId]);
     return result?.length > 0 ? (result as IAuctionDetails[]) : null;

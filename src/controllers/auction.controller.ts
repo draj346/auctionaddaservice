@@ -20,7 +20,7 @@ import { AuctionsHelper } from "../helpers/auctions.helpers";
 import { FileService } from "../services/file.service";
 import { DuplicateFile, getFormattedAmount, toMySQLDate } from "../utils/common";
 import { RoleService } from "../services/role.service";
-import { ROLES } from "../constants/roles.constants";
+import { PlayerRole, ROLES } from "../constants/roles.constants";
 import { FILE_UPLOAD_FOLDER, FREE_TEAM_CREATE_LIMIT } from "../config/env";
 import PDFDocument from "pdfkit";
 import fs from "fs";
@@ -278,12 +278,13 @@ export class AuctionController {
           if (auctionResponse.qrCodePath) {
             await fileService.deleteUploadedFile(auctionResponse.qrCodePath);
           }
-
-          if (RoleHelper.isOrganiser(req.role)) {
-            const isOrganiser = AuctionService.isOrganiser(auctionResponse.playerId);
-
+           const currentRole = await RoleService.getUserRole(auctionResponse.playerId);
+          if (RoleHelper.isOrganiser(currentRole as PlayerRole)) {
+            const isOrganiser = await AuctionService.isOrganiser(auctionResponse.playerId);
+            console.log(isOrganiser);
             if (!isOrganiser) {
               const roleResult = await RoleService.deleteRole(auctionResponse.playerId);
+              console.log(roleResult);
               if (roleResult) {
                 NotificationService.createNotification(
                   auctionResponse.playerId,
@@ -358,16 +359,19 @@ export class AuctionController {
       let auctionResponse = await AuctionService.approveAuction(auctionId);
       if (auctionResponse) {
         const auctionInfo = await AuctionService.getAuctionName(auctionId);
-        if (auctionInfo?.playerId && !RoleHelper.isOrganiserAndAbove(req.role)) {
-          const roleResult = await RoleService.createOrganiser(auctionInfo?.playerId);
-          if (roleResult) {
-            NotificationService.createNotification(
-              auctionInfo.playerId,
-              NotificationMessage.CHANGE_ROLE_TO_ORGANISER,
-              NOTIFICATIONS.ROLE_UPDATED as NotificationType,
-              req.userId,
-              req.role
-            );
+        if (auctionInfo?.playerId) {
+          const currentRole = await RoleService.getUserRole(auctionInfo?.playerId);
+          if (!RoleHelper.isOrganiserAndAbove(currentRole as PlayerRole)) {
+            const roleResult = await RoleService.createOrganiser(auctionInfo?.playerId);
+            if (roleResult) {
+              NotificationService.createNotification(
+                auctionInfo.playerId,
+                NotificationMessage.CHANGE_ROLE_TO_ORGANISER,
+                NOTIFICATIONS.ROLE_UPDATED as NotificationType,
+                req.userId,
+                req.role
+              );
+            }
           }
         }
         NotificationService.createNotification(
@@ -933,10 +937,10 @@ export class AuctionController {
           if (auction.imageId) {
             const files = await fileService.getFiles([auction.imageId]);
             if (files?.length === 1) {
-              auctionImagePath = path.join(process.cwd(), 'public', 'uploads', files[0].name);
+              auctionImagePath = path.join(process.cwd(), "public", "uploads", files[0].name);
             }
           }
-          const siteLogoPath = path.join(process.cwd(), 'public', 'icons', "logo.png");
+          const siteLogoPath = path.join(process.cwd(), "public", "icons", "logo.png");
           if (teamPlayers) {
             generateTeamPDF({
               team,
@@ -959,22 +963,22 @@ export class AuctionController {
   static isValidToStartAuction = async (req: Request, res: Response) => {
     try {
       const auctionId = parseInt(req.params.auctionId);
-      const auctionInfo = await AuctionService.getLiveAuctionPlayerId(auctionId);
+      const auctionInfo = await AuctionService.isLiveAuctionAccess(auctionId);
       if (!auctionInfo) {
         return ApiResponse.error(res, "Permission Denied", 200, { isAccessDenied: true });
       }
 
       if (RoleHelper.isAdminAndAbove(req.role) || auctionInfo.playerId === req.userId) {
-          ApiResponse.success(res, {count: 1}, 200, "verified successfully!!");
+        ApiResponse.success(res, { count: 1 }, 200, "verified successfully!!");
       }
 
       const isOwner = await AuctionService.isOwnerByAuctionId(auctionId, req.userId);
 
       if (isOwner) {
-          ApiResponse.success(res, {count: 2}, 200, "verified successfully!!");
+        ApiResponse.success(res, { count: 2 }, 200, "verified successfully!!");
       }
 
-       ApiResponse.success(res, {count: 3}, 200, "verified successfully!!");
+      ApiResponse.success(res, { count: 3 }, 200, "verified successfully!!");
     } catch (error) {
       console.log(error);
       ApiResponse.error(res, "Something went happen. Please try again.", 500, { isError: true });

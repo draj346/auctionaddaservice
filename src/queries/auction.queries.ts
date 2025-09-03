@@ -40,6 +40,7 @@ export const AuctionQueries = {
   isOrganiser: `select count(*) as count from auctions where paymentStatus is true and playerId = ? and isActive is true and (isLive is false or (isLive is true and startDate <=CURDATE()))`,
   getAuctionPlayerId: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True AND isLive is False`,
   getLiveAuctionPlayerId: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True AND isCompleted is False`,
+  isAuctionAccess: `SELECT playerId, name, code from auctions where auctionId = ? AND isActive is True;`,
   isValidAuction: `SELECT count(*) as count from auctions where auctionId = ? AND playerId =? AND isActive is True`,
   isValidAuctionPlayerIdForEdit: `SELECT playerId from auctions where auctionId = ? AND isActive is True and isLive is False`,
   getAuctions: `SELECT auctionId, imageId, name, season, state, district, paymentStatus, startDate, startTime, maxPlayerPerTeam,
