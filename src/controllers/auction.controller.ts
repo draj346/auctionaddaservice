@@ -969,13 +969,13 @@ export class AuctionController {
       }
 
       if (RoleHelper.isAdminAndAbove(req.role) || auctionInfo.playerId === req.userId) {
-        ApiResponse.success(res, { count: 1 }, 200, "verified successfully!!");
+       return ApiResponse.success(res, { count: 1 }, 200, "verified successfully!!");
       }
 
       const isOwner = await AuctionService.isOwnerByAuctionId(auctionId, req.userId);
 
       if (isOwner) {
-        ApiResponse.success(res, { count: 2 }, 200, "verified successfully!!");
+       return ApiResponse.success(res, { count: 2 }, 200, "verified successfully!!");
       }
 
       ApiResponse.success(res, { count: 3 }, 200, "verified successfully!!");
